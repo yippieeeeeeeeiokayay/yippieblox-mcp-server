@@ -43,12 +43,17 @@ pub async fn serve(config: Config, state: SharedState) -> anyhow::Result<()> {
 // ─── Auth ─────────────────────────────────────────────────────
 
 fn check_auth(headers: &HeaderMap, config: &Config) -> Result<(), (StatusCode, String)> {
+    let token = match &config.token {
+        Some(t) => t,
+        None => return Ok(()), // Auth disabled — allow all requests
+    };
+
     let auth = headers
         .get("authorization")
         .and_then(|v| v.to_str().ok())
         .unwrap_or("");
 
-    let expected = format!("Bearer {}", config.token);
+    let expected = format!("Bearer {token}");
     if auth != expected {
         return Err((
             StatusCode::UNAUTHORIZED,

@@ -4,7 +4,7 @@ use std::path::PathBuf;
 #[derive(Debug, Clone)]
 pub struct Config {
     pub port: u16,
-    pub token: String,
+    pub token: Option<String>,
     pub capture_dir: PathBuf,
 }
 
@@ -14,15 +14,13 @@ pub fn load() -> Result<Config> {
         .and_then(|v| v.parse().ok())
         .unwrap_or(3333);
 
-    let token = std::env::var("YIPPIE_TOKEN").unwrap_or_else(|_| {
-        let generated = uuid::Uuid::new_v4().to_string();
+    let token = std::env::var("YIPPIE_TOKEN").ok();
+    if token.is_none() {
         eprintln!("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-        eprintln!("  No YIPPIE_TOKEN set. Generated token:");
-        eprintln!("  {generated}");
-        eprintln!("  Paste this into the Studio plugin's Auth Token field.");
+        eprintln!("  No YIPPIE_TOKEN set. Auth is DISABLED.");
+        eprintln!("  Set YIPPIE_TOKEN to require a Bearer token.");
         eprintln!("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-        generated
-    });
+    }
 
     let capture_dir = std::env::var("YIPPIE_CAPTURE_DIR")
         .map(PathBuf::from)
