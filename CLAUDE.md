@@ -68,6 +68,7 @@ Add to your `.mcp.json` (project) or `~/.claude.json` (global):
   YippieBlox/                    ← Plugin source (Luau modules)
     init.server.lua              ← Plugin entry point
     bridge.lua                   ← HTTP poll/push logic
+    playtest_bridge_source.lua   ← Server-side bridge injected during playtest
     tools/*.lua                  ← Tool handler modules
     ui/*.lua                     ← Dock widget + command trace
     util/*.lua                   ← Ring buffer helpers
@@ -79,6 +80,7 @@ Add to your `.mcp.json` (project) or `~/.claude.json` (global):
 - **Luau**: Roblox style — `PascalCase` for services/classes, `camelCase` for variables/functions, `UPPER_SNAKE` for constants.
 - **Error handling**: All plugin tool handlers must be `pcall`-wrapped. Rust uses `anyhow` for internal errors, structured MCP errors for client-facing.
 - **Logging**: Rust uses `tracing` crate. Plugin prefixes internal messages with `[MCP]` (which are filtered from log capture to avoid loops).
+- **README.md must stay up to date**: When adding, removing, or renaming tools, changing build steps, updating config options, or modifying the smoke test — always update README.md to match. The tool table, smoke test section, and setup instructions must reflect the current state of the code.
 
 ## MCP Tool Schema Summary
 
@@ -87,11 +89,13 @@ All tools are namespaced under `studio-*`:
 | Tool | Purpose |
 |------|---------|
 | `studio-status` | Connection + playtest status |
-| `studio-run_script` | Execute Luau code in Studio |
+| `studio-run_script` | Execute Luau code in Studio (edit mode) |
+| `studio-test_script` | Run Luau in a playtest session (auto start/stop, captures logs+errors) |
 | `studio-checkpoint_begin` | Start ChangeHistoryService waypoint |
 | `studio-checkpoint_end` | Commit checkpoint |
 | `studio-checkpoint_undo` | Undo to checkpoint |
-| `studio-playtest_start` | Start playtest via StudioTestService |
+| `studio-playtest_play` | Start Play mode playtest (F5, client+server) |
+| `studio-playtest_run` | Start Run mode playtest (F8, server only) |
 | `studio-playtest_stop` | Stop playtest |
 | `studio-logs_subscribe` | Subscribe to LogService output |
 | `studio-logs_unsubscribe` | Unsubscribe from logs |
@@ -126,6 +130,8 @@ All tools are namespaced under `studio-*`:
 - The plugin **auto-starts** when Studio opens (it's a Script in the Plugins folder).
 - On load it prints `[MCP] YippieBlox MCP Bridge Plugin loaded` to the Output window.
 - If a server URL was previously saved, it **auto-connects** on startup (token optional).
+- On connect, it **injects a playtest bridge Script** into ServerScriptService so MCP tools work during playtest (HttpService is blocked in plugin context during playtest — the server-side Script takes over).
+- During playtest, the plugin pauses its own polling and the injected bridge handles tool calls.
 - After building, copy to Studio: `cp plugin/YippieBlox.rbxmx ~/Documents/Roblox/Plugins/`
 
 ## Don'ts

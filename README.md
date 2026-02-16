@@ -207,12 +207,13 @@ After setup, verify everything works:
    studio-checkpoint_undo({})
    → MCPTestPart should disappear from workspace
 
-   studio-playtest_start({ mode: "run" })
-   studio-virtualuser_attach({})
-   studio-virtualuser_key({ keyCode: "Space", action: "type" })
-   studio-capture_screenshot({ tag: "test" })
-   → Check .roblox-captures/ for the screenshot file
+   studio-test_script({ code: "print('Hello from playtest!') return workspace:GetChildren()" })
+   → Should return success: true, value, and captured logs
+
+   studio-playtest_run({})
+   → Studio should enter Run mode (F8)
    studio-playtest_stop({})
+   → Studio should return to Edit mode
 
    studio-logs_unsubscribe({})
 ```
