@@ -5,10 +5,15 @@
 -- polls for tool requests from AI coding assistants (Claude Code),
 -- executes them inside Studio, and returns results.
 --
+-- During playtest, a server-side Script takes over HTTP polling
+-- (plugin context can't use HttpService during playtest).
+--
 -- Install: Copy this YippieBlox folder to your Studio Plugins directory.
 -- Requires: HttpService enabled in Game Settings.
 
 local HttpService = game:GetService("HttpService")
+local RunService = game:GetService("RunService")
+local ServerScriptService = game:GetService("ServerScriptService")
 
 -- ─── Require Modules ──────────────────────────────────────────
 
@@ -16,6 +21,7 @@ local Bridge = require(script.bridge)
 local ToolRouter = require(script.tools)
 local Widget = require(script.ui.widget)
 local CommandTrace = require(script.ui.command_trace)
+local PLAYTEST_BRIDGE_SOURCE = require(script.playtest_bridge_source)
 
 -- ─── Check HttpService ────────────────────────────────────────
 
@@ -69,6 +75,45 @@ local function detectFeatures()
 	return features
 end
 
+-- ─── Playtest Bridge Injection ───────────────────────────────
+
+local BRIDGE_SCRIPT_NAME = "_YippieBloxPlaytestBridge"
+
+local function injectPlaytestBridge(serverUrl, token)
+	-- Remove old one if it exists
+	local existing = ServerScriptService:FindFirstChild(BRIDGE_SCRIPT_NAME)
+	if existing then
+		existing:Destroy()
+	end
+
+	-- Create a Script in ServerScriptService with the bridge code
+	local bridgeScript = Instance.new("Script")
+	bridgeScript.Name = BRIDGE_SCRIPT_NAME
+	bridgeScript.Source = PLAYTEST_BRIDGE_SOURCE
+
+	-- Store config as StringValue children (the script reads these)
+	local urlVal = Instance.new("StringValue")
+	urlVal.Name = "_YippieBlox_URL"
+	urlVal.Value = serverUrl
+	urlVal.Parent = bridgeScript
+
+	local tokenVal = Instance.new("StringValue")
+	tokenVal.Name = "_YippieBlox_Token"
+	tokenVal.Value = token or ""
+	tokenVal.Parent = bridgeScript
+
+	bridgeScript.Parent = ServerScriptService
+	print("[MCP] Injected playtest bridge into ServerScriptService")
+end
+
+local function removePlaytestBridge()
+	local existing = ServerScriptService:FindFirstChild(BRIDGE_SCRIPT_NAME)
+	if existing then
+		existing:Destroy()
+		print("[MCP] Removed playtest bridge from ServerScriptService")
+	end
+end
+
 -- ─── Main Plugin Logic ────────────────────────────────────────
 
 -- Create UI widget
@@ -79,6 +124,9 @@ local commandTrace = CommandTrace.new(500)
 local bridge = nil
 local connected = false
 local pollThread = nil
+local pollPaused = false
+local currentServerUrl = nil
+local currentToken = nil
 
 local features = detectFeatures()
 
@@ -87,6 +135,7 @@ local function makeContext()
 	return {
 		features = features,
 		bridge = bridge,
+		plugin = plugin,
 	}
 end
 
@@ -104,6 +153,28 @@ local function startPollLoop()
 		local MAX_FAILURES = 3
 
 		while connected do
+			-- Pause polling during playtest — HttpService is blocked in plugin context.
+			-- The injected server-side Script handles tool calls during playtest.
+			if RunService:IsRunning() then
+				if not pollPaused then
+					pollPaused = true
+					print("[MCP] Plugin polling paused (playtest active — server-side bridge takes over)")
+					widgetController:setStatus("Playtest active (server bridge)", true)
+				end
+				task.wait(1)
+				continue
+			elseif pollPaused then
+				pollPaused = false
+				print("[MCP] Plugin polling resumed (playtest ended)")
+				widgetController:setStatus("Reconnecting...", true)
+				-- Re-register since the server may have timed out the client
+				local ok, clientId = bridge:register()
+				if ok then
+					widgetController:setStatus("Connected (" .. clientId .. ")", true)
+					consecutiveFailures = 0
+				end
+			end
+
 			local requests = bridge:pull()
 
 			if #requests > 0 then
@@ -179,6 +250,9 @@ local function doConnect(serverUrl, token)
 		-- Disconnect
 		connected = false
 		bridge = nil
+		currentServerUrl = nil
+		currentToken = nil
+		removePlaytestBridge()
 		widgetController:setStatus("Disconnected", false)
 		widgetController:setConnectButtonText("Connect")
 		return
@@ -205,10 +279,16 @@ local function doConnect(serverUrl, token)
 
 	if ok then
 		connected = true
+		currentServerUrl = serverUrl
+		currentToken = token
 		widgetController:setStatus("Connected (" .. clientId .. ")", true)
 		widgetController:setConnectButtonText("Disconnect")
 		print("[MCP] Connected to server. ClientId: " .. clientId)
 		print("[MCP] Features: " .. game:GetService("HttpService"):JSONEncode(features))
+
+		-- Inject playtest bridge Script so it's available when playtest starts
+		injectPlaytestBridge(serverUrl, token)
+
 		startPollLoop()
 	else
 		widgetController:setStatus("Failed: " .. tostring(clientId), false)

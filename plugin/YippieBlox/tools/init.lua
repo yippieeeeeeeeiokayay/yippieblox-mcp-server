@@ -33,8 +33,10 @@ local handlers = {
 	["studio-checkpoint_undo"] = Checkpoint.undo,
 
 	-- Playtest control
-	["studio-playtest_start"] = Playtest.start,
+	["studio-playtest_play"] = Playtest.play,
+	["studio-playtest_run"] = Playtest.run,
 	["studio-playtest_stop"] = Playtest.stop,
+	["studio-test_script"] = Playtest.testScript,
 
 	-- Log capture
 	["studio-logs_subscribe"] = Logs.subscribe,

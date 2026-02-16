@@ -321,18 +321,19 @@ fn tool_definitions() -> Vec<McpToolDef> {
             }),
         },
         McpToolDef {
-            name: "studio-playtest_start".into(),
-            description: Some("Start a playtest session in Roblox Studio".into()),
+            name: "studio-playtest_play".into(),
+            description: Some("Start a Play mode playtest in Roblox Studio (client+server, like pressing F5)".into()),
             input_schema: json!({
                 "type": "object",
-                "properties": {
-                    "mode": {
-                        "type": "string",
-                        "enum": ["play", "run", "startServer"],
-                        "description": "Playtest mode: 'play' (client+server), 'run' (server only), 'startServer' (team test)"
-                    }
-                },
-                "required": ["mode"]
+                "properties": {}
+            }),
+        },
+        McpToolDef {
+            name: "studio-playtest_run".into(),
+            description: Some("Start a Run mode playtest in Roblox Studio (server only, like pressing F8)".into()),
+            input_schema: json!({
+                "type": "object",
+                "properties": {}
             }),
         },
         McpToolDef {
@@ -346,6 +347,29 @@ fn tool_definitions() -> Vec<McpToolDef> {
                         "description": "Optional session ID to stop"
                     }
                 }
+            }),
+        },
+        McpToolDef {
+            name: "studio-test_script".into(),
+            description: Some("Run a Luau test script inside a playtest session. Automatically starts a playtest, injects and executes the code in the server context, captures all output logs and errors, stops the playtest, and returns the results. Use this to test game logic, verify scripts work correctly, or check for runtime errors. The code runs with full access to game services (Workspace, Players, etc). Returns: success (bool), value (return value), error (if failed), logs (all output), errors (warnings/errors only), duration (seconds).".into()),
+            input_schema: json!({
+                "type": "object",
+                "properties": {
+                    "code": {
+                        "type": "string",
+                        "description": "Luau code to execute as a test. The code runs in the server context during playtest. Use print() for output, error() or assert() for failures. The return value of the last expression is captured."
+                    },
+                    "mode": {
+                        "type": "string",
+                        "enum": ["run", "play"],
+                        "description": "Playtest mode: 'run' (server only, faster) or 'play' (client+server). Default: 'run'"
+                    },
+                    "timeout": {
+                        "type": "number",
+                        "description": "Max seconds to wait for the test to complete before force-stopping. Default: 30"
+                    }
+                },
+                "required": ["code"]
             }),
         },
         McpToolDef {

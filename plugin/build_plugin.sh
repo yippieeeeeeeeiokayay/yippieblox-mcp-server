@@ -9,6 +9,7 @@
 #   YippieBlox (Folder)
 #     main (Script)                  ← init.server.lua
 #       bridge (ModuleScript)        ← bridge.lua
+#       playtest_bridge_source (ModuleScript) ← returns Luau source for server-side bridge
 #       tools (ModuleScript)         ← tools/init.lua (router)
 #         run_script (ModuleScript)
 #         checkpoint (ModuleScript)
@@ -79,6 +80,16 @@ echo "        <Properties>"
 echo "          <string name=\"Name\">bridge</string>"
 echo "          <ProtectedString name=\"Source\"><![CDATA["
 cdata_file "$SRC/bridge.lua"
+echo "]]></ProtectedString>"
+echo "        </Properties>"
+echo "      </Item>"
+
+# ── playtest_bridge_source (ModuleScript — returns source string for injection) ──
+echo "      <Item class=\"ModuleScript\" referent=\"$(next_ref)\">"
+echo "        <Properties>"
+echo "          <string name=\"Name\">playtest_bridge_source</string>"
+echo "          <ProtectedString name=\"Source\"><![CDATA["
+cdata_file "$SRC/playtest_bridge_source.lua"
 echo "]]></ProtectedString>"
 echo "        </Properties>"
 echo "      </Item>"

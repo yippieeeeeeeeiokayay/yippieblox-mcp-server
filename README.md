@@ -148,16 +148,18 @@ Restart Claude Desktop after saving. The `studio-*` tools will appear in the too
 
 ## MCP Tools
 
-All 20 tools are available to the AI client:
+All 22 tools are available to the AI client:
 
 | Tool | Description |
 |---|---|
 | `studio-status` | Get connection status and playtest state |
-| `studio-run_script` | Execute Luau code in Studio |
+| `studio-run_script` | Execute Luau code in Studio (edit mode) |
+| `studio-test_script` | Run Luau code in a playtest session — auto-starts playtest, executes code in server context, captures all logs/errors, stops playtest, returns results |
 | `studio-checkpoint_begin` | Start ChangeHistoryService recording |
 | `studio-checkpoint_end` | Commit recording |
 | `studio-checkpoint_undo` | Undo last change |
-| `studio-playtest_start` | Start playtest (play/run mode) |
+| `studio-playtest_play` | Start Play mode playtest (client+server, like F5) |
+| `studio-playtest_run` | Start Run mode playtest (server only, like F8) |
 | `studio-playtest_stop` | Stop playtest |
 | `studio-logs_subscribe` | Subscribe to log output |
 | `studio-logs_unsubscribe` | Unsubscribe from logs |

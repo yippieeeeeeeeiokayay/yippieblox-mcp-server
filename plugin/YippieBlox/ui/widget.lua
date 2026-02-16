@@ -222,7 +222,7 @@ function Widget.create(pluginObj)
 			detailStr = " | " .. string.sub(details, 1, 60)
 		end
 
-		local label = Instance.new("TextLabel")
+		local label = Instance.new("TextBox")
 		label.Size = UDim2.new(1, 0, 0, 18)
 		label.BackgroundTransparency = 1
 		label.TextColor3 = if success then COLORS.textDim else COLORS.disconnected
@@ -230,6 +230,8 @@ function Widget.create(pluginObj)
 		label.Font = Enum.Font.SourceSans
 		label.TextSize = 12
 		label.TextTruncate = Enum.TextTruncate.AtEnd
+		label.TextEditable = false
+		label.ClearTextOnFocus = false
 		label.Text = string.format("%s %s (%s)%s", toolName, status, elapsedStr, detailStr)
 		label.LayoutOrder = #traceLabels + 1
 		label.Parent = scrollFrame
