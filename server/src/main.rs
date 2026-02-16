@@ -6,9 +6,21 @@ mod state;
 mod types;
 
 use anyhow::Result;
+use clap::Parser;
+
+#[derive(Parser)]
+#[command(name = "roblox-studio-yippieblox-mcp-server")]
+#[command(about = "MCP server bridging AI coding assistants with Roblox Studio")]
+struct Cli {
+    /// Run in STDIO mode (required for MCP clients like Claude Code / Claude Desktop)
+    #[arg(long)]
+    stdio: bool,
+}
 
 #[tokio::main]
 async fn main() -> Result<()> {
+    let _cli = Cli::parse();
+
     // Init tracing to STDERR only (stdout is reserved for MCP protocol)
     tracing_subscriber::fmt()
         .with_writer(std::io::stderr)

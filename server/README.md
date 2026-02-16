@@ -21,7 +21,7 @@ cargo run
 YIPPIE_PORT=3333 YIPPIE_TOKEN=mytoken cargo run
 
 # Release
-./target/release/yippieblox-mcp-server
+./target/release/roblox-studio-yippieblox-mcp-server
 ```
 
 All diagnostic logging goes to **stderr**. Stdout is reserved for MCP protocol messages.

@@ -37,7 +37,7 @@ cd server
 cargo build --release
 ```
 
-The binary is at `server/target/release/yippieblox-mcp-server`.
+The binary is at `server/target/release/roblox-studio-yippieblox-mcp-server`.
 
 ### 2. Build & Install the Studio Plugin
 
@@ -67,10 +67,10 @@ Copy-Item plugin\YippieBlox.rbxmx "$env:LOCALAPPDATA\Roblox\Plugins\YippieBlox.r
 
 ```bash
 # With a specific token:
-YIPPIE_TOKEN=mysecrettoken ./server/target/release/yippieblox-mcp-server
+YIPPIE_TOKEN=mysecrettoken ./server/target/release/roblox-studio-yippieblox-mcp-server
 
 # Or let the server generate a random token (printed to stderr):
-./server/target/release/yippieblox-mcp-server
+./server/target/release/roblox-studio-yippieblox-mcp-server
 ```
 
 ### 5. Connect the Plugin
@@ -80,15 +80,27 @@ YIPPIE_TOKEN=mysecrettoken ./server/target/release/yippieblox-mcp-server
 3. Paste the auth token from the server output
 4. Click **Connect**
 
-### 6. Connect Claude Code
+### 6. Connect Your AI Client
 
-Add to your Claude Code MCP configuration (`~/.claude.json` or project `.mcp.json`):
+#### Claude Code (CLI)
+
+Run this from your project directory:
+
+```bash
+claude mcp add roblox-studio-yippieblox \
+  --env YIPPIE_TOKEN=mysecrettoken \
+  --env YIPPIE_PORT=3333 \
+  -- /absolute/path/to/server/target/release/roblox-studio-yippieblox-mcp-server --stdio
+```
+
+Or manually add to your project's `.mcp.json` (or `~/.claude.json` for global):
 
 ```json
 {
   "mcpServers": {
-    "roblox-studio": {
-      "command": "/absolute/path/to/server/target/release/yippieblox-mcp-server",
+    "roblox-studio-yippieblox": {
+      "command": "/absolute/path/to/server/target/release/roblox-studio-yippieblox-mcp-server",
+      "args": ["--stdio"],
       "env": {
         "YIPPIE_TOKEN": "mysecrettoken",
         "YIPPIE_PORT": "3333"
@@ -97,6 +109,34 @@ Add to your Claude Code MCP configuration (`~/.claude.json` or project `.mcp.jso
   }
 }
 ```
+
+Then restart Claude Code. The `studio.*` tools will be available.
+
+#### Claude Desktop
+
+Open **Settings → Developer → Edit Config**, or edit the config file directly:
+
+- **macOS:** `~/Library/Application Support/Claude/claude_desktop_config.json`
+- **Windows:** `%APPDATA%\Claude\claude_desktop_config.json`
+
+Add the following:
+
+```json
+{
+  "mcpServers": {
+    "roblox-studio-yippieblox": {
+      "command": "/absolute/path/to/server/target/release/roblox-studio-yippieblox-mcp-server",
+      "args": ["--stdio"],
+      "env": {
+        "YIPPIE_TOKEN": "mysecrettoken",
+        "YIPPIE_PORT": "3333"
+      }
+    }
+  }
+}
+```
+
+Restart Claude Desktop after saving. The `studio.*` tools will appear in the tool picker.
 
 ## Configuration
 

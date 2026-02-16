@@ -28,13 +28,14 @@ cargo run --manifest-path server/Cargo.toml --bin mcpctl -- status
 
 ## Connecting Claude Code
 
-Add to your MCP client config (e.g. `~/.claude/claude_desktop_config.json` or Claude Code MCP settings):
+Add to your `.mcp.json` (project) or `~/.claude.json` (global):
 
 ```json
 {
   "mcpServers": {
-    "roblox-studio": {
-      "command": "/path/to/yippieblox_mcp_server/server/target/release/yippieblox-mcp-server",
+    "roblox-studio-yippieblox": {
+      "command": "/path/to/yippieblox_mcp_server/server/target/release/roblox-studio-yippieblox-mcp-server",
+      "args": ["--stdio"],
       "env": {
         "YIPPIE_TOKEN": "your-secret-token",
         "YIPPIE_PORT": "3333"

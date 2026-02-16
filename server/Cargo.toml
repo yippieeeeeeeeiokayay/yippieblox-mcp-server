@@ -1,11 +1,11 @@
 [package]
-name = "yippieblox-mcp-server"
+name = "roblox-studio-yippieblox-mcp-server"
 version = "0.1.0"
 edition = "2021"
 description = "MCP server bridging AI coding assistants with Roblox Studio"
 
 [[bin]]
-name = "yippieblox-mcp-server"
+name = "roblox-studio-yippieblox-mcp-server"
 path = "src/main.rs"
 
 [[bin]]
