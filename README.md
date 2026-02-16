@@ -39,18 +39,22 @@ cargo build --release
 
 The binary is at `server/target/release/yippieblox-mcp-server`.
 
-### 2. Install the Studio Plugin
+### 2. Build & Install the Studio Plugin
 
-Copy the `plugin/YippieBlox` folder to your Studio Plugins directory:
+Build the `.rbxmx` plugin file from source, then copy it to your Studio Plugins directory:
+
+```bash
+cd plugin && ./build_plugin.sh
+```
 
 **macOS:**
 ```bash
-cp -r plugin/YippieBlox ~/Documents/Roblox/Plugins/YippieBlox
+cp plugin/YippieBlox.rbxmx ~/Documents/Roblox/Plugins/YippieBlox.rbxmx
 ```
 
 **Windows (PowerShell):**
 ```powershell
-Copy-Item -Recurse plugin\YippieBlox "$env:LOCALAPPDATA\Roblox\Plugins\YippieBlox"
+Copy-Item plugin\YippieBlox.rbxmx "$env:LOCALAPPDATA\Roblox\Plugins\YippieBlox.rbxmx"
 ```
 
 ### 3. Enable HTTP Requests in Studio
@@ -211,7 +215,8 @@ cargo run --bin mcpctl -- captures --dir .roblox-captures
     captures.rs                     Capture file management
     bin/mcpctl.rs                   Debug CLI
 /plugin/
-  YippieBlox/                       Copy this folder to Studio Plugins dir
+  build_plugin.sh                   Builds YippieBlox.rbxmx from source
+  YippieBlox/                       Plugin source (Luau modules)
     init.server.lua                 Plugin entry point
     bridge.lua                      HTTP bridge client
     tools/                          Tool handler modules

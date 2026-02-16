@@ -61,7 +61,8 @@ Add to your MCP client config (e.g. `~/.claude/claude_desktop_config.json` or Cl
     captures.rs                  ← Capture file handling + index.json management
     bin/mcpctl.rs                ← Debug CLI for bridge + captures
 /plugin/                         ← Roblox Studio plugin
-  YippieBlox/                    ← Copy this folder to Studio Plugins dir
+  build_plugin.sh                ← Builds YippieBlox.rbxmx from source
+  YippieBlox/                    ← Plugin source (Luau modules)
     init.server.lua              ← Plugin entry point
     bridge.lua                   ← HTTP poll/push logic
     tools/*.lua                  ← Tool handler modules

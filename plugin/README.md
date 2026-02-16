@@ -4,16 +4,20 @@ Roblox Studio plugin that bridges to the YippieBlox MCP server.
 
 ## Installation
 
-Copy the `YippieBlox` folder to your Studio Plugins directory:
+Build the `.rbxmx` plugin file from source, then copy it to your Studio Plugins directory:
+
+```bash
+cd plugin && ./build_plugin.sh
+```
 
 **macOS:**
-```
-~/Documents/Roblox/Plugins/YippieBlox/
+```bash
+cp YippieBlox.rbxmx ~/Documents/Roblox/Plugins/YippieBlox.rbxmx
 ```
 
-**Windows:**
-```
-%LOCALAPPDATA%\Roblox\Plugins\YippieBlox\
+**Windows (PowerShell):**
+```powershell
+Copy-Item YippieBlox.rbxmx "$env:LOCALAPPDATA\Roblox\Plugins\YippieBlox.rbxmx"
 ```
 
 Then restart Roblox Studio. The plugin loads automatically.
@@ -48,9 +52,9 @@ Enable HTTP requests in Game Settings > Security.
 - Roblox may block direct IP addresses; `localhost` hostname is required
 
 ### Plugin doesn't appear
-- Verify the folder is in the correct Plugins directory
-- Ensure the folder contains `init.server.lua` (not just `init.lua`)
-- Restart Studio after copying the folder
+- Verify `YippieBlox.rbxmx` is in the correct Plugins directory
+- Rebuild with `./build_plugin.sh` if the file seems corrupted
+- Restart Studio after copying the file
 
 ### Connection drops frequently
 - The plugin auto-reconnects after 3 consecutive failures
