@@ -25,8 +25,10 @@ pub fn load() -> Result<Config> {
     let capture_dir = std::env::var("YIPPIE_CAPTURE_DIR")
         .map(PathBuf::from)
         .unwrap_or_else(|_| {
-            std::env::current_dir()
-                .unwrap_or_else(|_| PathBuf::from("."))
+            // Default to ~/.roblox-captures/ so it works regardless of cwd
+            // (Claude Desktop launches with cwd=/ which is read-only on macOS)
+            std::env::var("HOME").map(PathBuf::from)
+                .unwrap_or_else(|_| std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".")))
                 .join(".roblox-captures")
         });
 
