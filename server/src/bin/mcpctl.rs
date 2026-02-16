@@ -30,7 +30,7 @@ enum Commands {
     },
     /// Send a test tool call through the bridge
     Call {
-        /// Tool name (e.g. studio.status)
+        /// Tool name (e.g. studio-status)
         tool: String,
         /// JSON arguments
         #[arg(long, default_value = "{}")]

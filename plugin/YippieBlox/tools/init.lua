@@ -13,7 +13,7 @@ local ToolRouter = {}
 
 local handlers = {
 	-- status is handled inline (no module needed — just returns connection state)
-	["studio.status"] = function(_args, ctx)
+	["studio-status"] = function(_args, ctx)
 		local RunService = game:GetService("RunService")
 		return true, {
 			connected = true,
@@ -25,37 +25,37 @@ local handlers = {
 	end,
 
 	-- Script execution
-	["studio.run_script"] = RunScript.execute,
+	["studio-run_script"] = RunScript.execute,
 
 	-- Checkpoint / undo
-	["studio.checkpoint_begin"] = Checkpoint.beginRecording,
-	["studio.checkpoint_end"] = Checkpoint.endRecording,
-	["studio.checkpoint_undo"] = Checkpoint.undo,
+	["studio-checkpoint_begin"] = Checkpoint.beginRecording,
+	["studio-checkpoint_end"] = Checkpoint.endRecording,
+	["studio-checkpoint_undo"] = Checkpoint.undo,
 
 	-- Playtest control
-	["studio.playtest_start"] = Playtest.start,
-	["studio.playtest_stop"] = Playtest.stop,
+	["studio-playtest_start"] = Playtest.start,
+	["studio-playtest_stop"] = Playtest.stop,
 
 	-- Log capture
-	["studio.logs_subscribe"] = Logs.subscribe,
-	["studio.logs_unsubscribe"] = Logs.unsubscribe,
-	["studio.logs_get"] = Logs.get,
+	["studio-logs_subscribe"] = Logs.subscribe,
+	["studio-logs_unsubscribe"] = Logs.unsubscribe,
+	["studio-logs_get"] = Logs.get,
 
 	-- VirtualUser input simulation
-	["studio.virtualuser_attach"] = VirtualUserTools.attach,
-	["studio.virtualuser_key"] = VirtualUserTools.key,
-	["studio.virtualuser_mouse_button"] = VirtualUserTools.mouseButton,
-	["studio.virtualuser_move_mouse"] = VirtualUserTools.moveMouse,
+	["studio-virtualuser_attach"] = VirtualUserTools.attach,
+	["studio-virtualuser_key"] = VirtualUserTools.key,
+	["studio-virtualuser_mouse_button"] = VirtualUserTools.mouseButton,
+	["studio-virtualuser_move_mouse"] = VirtualUserTools.moveMouse,
 
 	-- NPC driver
-	["studio.npc_driver_start"] = NpcDriver.start,
-	["studio.npc_driver_command"] = NpcDriver.command,
-	["studio.npc_driver_stop"] = NpcDriver.stop,
+	["studio-npc_driver_start"] = NpcDriver.start,
+	["studio-npc_driver_command"] = NpcDriver.command,
+	["studio-npc_driver_stop"] = NpcDriver.stop,
 
 	-- Capture
-	["studio.capture_screenshot"] = Capture.screenshot,
-	["studio.capture_video_start"] = Capture.videoStart,
-	["studio.capture_video_stop"] = Capture.videoStop,
+	["studio-capture_screenshot"] = Capture.screenshot,
+	["studio-capture_video_start"] = Capture.videoStart,
+	["studio-capture_video_stop"] = Capture.videoStop,
 }
 
 --- Dispatch a tool call to the appropriate handler.

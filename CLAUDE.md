@@ -82,30 +82,30 @@ Add to your `.mcp.json` (project) or `~/.claude.json` (global):
 
 ## MCP Tool Schema Summary
 
-All tools are namespaced under `studio.*`:
+All tools are namespaced under `studio-*`:
 
 | Tool | Purpose |
 |------|---------|
-| `studio.status` | Connection + playtest status |
-| `studio.run_script` | Execute Luau code in Studio |
-| `studio.checkpoint_begin` | Start ChangeHistoryService waypoint |
-| `studio.checkpoint_end` | Commit checkpoint |
-| `studio.checkpoint_undo` | Undo to checkpoint |
-| `studio.playtest_start` | Start playtest via StudioTestService |
-| `studio.playtest_stop` | Stop playtest |
-| `studio.logs_subscribe` | Subscribe to LogService output |
-| `studio.logs_unsubscribe` | Unsubscribe from logs |
-| `studio.logs_get` | Fetch log entries |
-| `studio.virtualuser_attach` | Attach VirtualUser controller |
-| `studio.virtualuser_key` | Simulate keyboard input |
-| `studio.virtualuser_mouse_button` | Simulate mouse button |
-| `studio.virtualuser_move_mouse` | Move mouse cursor |
-| `studio.npc_driver_start` | Start NPC automation driver |
-| `studio.npc_driver_command` | Send command to NPC driver |
-| `studio.npc_driver_stop` | Stop NPC driver |
-| `studio.capture_screenshot` | Take screenshot via CaptureService |
-| `studio.capture_video_start` | Start video recording |
-| `studio.capture_video_stop` | Stop video recording |
+| `studio-status` | Connection + playtest status |
+| `studio-run_script` | Execute Luau code in Studio |
+| `studio-checkpoint_begin` | Start ChangeHistoryService waypoint |
+| `studio-checkpoint_end` | Commit checkpoint |
+| `studio-checkpoint_undo` | Undo to checkpoint |
+| `studio-playtest_start` | Start playtest via StudioTestService |
+| `studio-playtest_stop` | Stop playtest |
+| `studio-logs_subscribe` | Subscribe to LogService output |
+| `studio-logs_unsubscribe` | Unsubscribe from logs |
+| `studio-logs_get` | Fetch log entries |
+| `studio-virtualuser_attach` | Attach VirtualUser controller |
+| `studio-virtualuser_key` | Simulate keyboard input |
+| `studio-virtualuser_mouse_button` | Simulate mouse button |
+| `studio-virtualuser_move_mouse` | Move mouse cursor |
+| `studio-npc_driver_start` | Start NPC automation driver |
+| `studio-npc_driver_command` | Send command to NPC driver |
+| `studio-npc_driver_stop` | Stop NPC driver |
+| `studio-capture_screenshot` | Take screenshot via CaptureService |
+| `studio-capture_video_start` | Start video recording |
+| `studio-capture_video_stop` | Stop video recording |
 
 ## Capture Folder
 

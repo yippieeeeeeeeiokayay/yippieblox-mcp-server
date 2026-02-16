@@ -43,7 +43,7 @@ local function addLog(message, messageType, timestamp)
 	-- Stream to bridge if connected
 	if bridgeRef then
 		task.spawn(function()
-			bridgeRef:pushEvent("studio.log", entry)
+			bridgeRef:pushEvent("studio-log", entry)
 		end)
 	end
 end

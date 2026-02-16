@@ -53,7 +53,7 @@ function Capture.screenshot(args, ctx)
 
 	-- Push capture event to bridge for Rust-side OS screenshot
 	if ctx and ctx.bridge then
-		ctx.bridge:pushEvent("studio.capture", {
+		ctx.bridge:pushEvent("studio-capture", {
 			kind = "screenshot",
 			tag = tag,
 			contentId = contentId,
@@ -89,12 +89,12 @@ function Capture.videoStart(args, _ctx)
 	-- CaptureService does not expose video recording control via Luau API.
 	return false, "Video recording is not supported via the CaptureService Luau API. "
 		.. "Use Roblox Studio's built-in recording (View > Record Video) or OS-level screen recording tools. "
-		.. "The studio.capture_screenshot tool is available for still images."
+		.. "The studio-capture_screenshot tool is available for still images."
 end
 
 function Capture.videoStop(args, _ctx)
 	return false, "Video recording is not supported via the CaptureService Luau API. "
-		.. "See studio.capture_video_start for alternatives."
+		.. "See studio-capture_video_start for alternatives."
 end
 
 return Capture

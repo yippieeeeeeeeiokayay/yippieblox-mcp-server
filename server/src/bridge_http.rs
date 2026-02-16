@@ -207,19 +207,19 @@ async fn handle_push(
 
 async fn handle_event(state: &SharedState, event: &BridgeEvent) {
     match event.event_type.as_str() {
-        "studio.log" => {
+        "studio-log" => {
             let level = event.data.get("level").and_then(|v| v.as_str()).unwrap_or("output");
             let message = event.data.get("message").and_then(|v| v.as_str()).unwrap_or("");
             let session_id = event.data.get("sessionId").and_then(|v| v.as_str()).map(String::from);
             state.push_log(level.to_string(), message.to_string(), session_id).await;
         }
-        "studio.playtest_state" => {
+        "studio-playtest_state" => {
             let active = event.data.get("active").and_then(|v| v.as_bool()).unwrap_or(false);
             let session_id = event.data.get("sessionId").and_then(|v| v.as_str()).map(String::from);
             let mode = event.data.get("mode").and_then(|v| v.as_str()).map(String::from);
             state.update_playtest(active, session_id, mode).await;
         }
-        "studio.capture" => {
+        "studio-capture" => {
             tracing::info!(data = ?event.data, "Capture event received");
             // Capture metadata is handled by the captures module when the
             // MCP layer processes the tool result

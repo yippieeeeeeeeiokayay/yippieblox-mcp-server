@@ -93,7 +93,7 @@ function Playtest.start(args, ctx)
 
 	-- Push playtest state event to bridge
 	if ctx and ctx.bridge then
-		ctx.bridge:pushEvent("studio.playtest_state", {
+		ctx.bridge:pushEvent("studio-playtest_state", {
 			active = true,
 			sessionId = sessionId,
 			mode = mode,
@@ -137,7 +137,7 @@ function Playtest.stop(args, ctx)
 
 	-- Push playtest state event
 	if ctx and ctx.bridge then
-		ctx.bridge:pushEvent("studio.playtest_state", {
+		ctx.bridge:pushEvent("studio-playtest_state", {
 			active = false,
 			sessionId = stoppedSessionId,
 		})

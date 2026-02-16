@@ -66,7 +66,7 @@ end
 
 function VirtualUserTools.key(args, _ctx)
 	if not attached then
-		return false, "VirtualUser not attached. Call studio.virtualuser_attach first."
+		return false, "VirtualUser not attached. Call studio-virtualuser_attach first."
 	end
 
 	local vim = getVIM()
@@ -146,7 +146,7 @@ end
 
 function VirtualUserTools.mouseButton(args, _ctx)
 	if not attached then
-		return false, "VirtualUser not attached. Call studio.virtualuser_attach first."
+		return false, "VirtualUser not attached. Call studio-virtualuser_attach first."
 	end
 
 	local vim = getVIM()
@@ -223,7 +223,7 @@ end
 
 function VirtualUserTools.moveMouse(args, _ctx)
 	if not attached then
-		return false, "VirtualUser not attached. Call studio.virtualuser_attach first."
+		return false, "VirtualUser not attached. Call studio-virtualuser_attach first."
 	end
 
 	local vim = getVIM()

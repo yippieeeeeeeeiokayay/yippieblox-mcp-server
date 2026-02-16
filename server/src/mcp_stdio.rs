@@ -136,8 +136,8 @@ async fn handle_tools_call(state: &SharedState, id: Value, params: Value) -> Jso
         .cloned()
         .unwrap_or(json!({}));
 
-    // studio.status can be answered directly by the server
-    if tool_name == "studio.status" {
+    // studio-status can be answered directly by the server
+    if tool_name == "studio-status" {
         return handle_status_tool(state, id).await;
     }
 
@@ -240,7 +240,7 @@ async fn handle_status_tool(state: &SharedState, id: Value) -> JsonRpcResponse {
 fn tool_definitions() -> Vec<McpToolDef> {
     vec![
         McpToolDef {
-            name: "studio.status".into(),
+            name: "studio-status".into(),
             description: Some("Get Studio connection status and playtest state".into()),
             input_schema: json!({
                 "type": "object",
@@ -249,7 +249,7 @@ fn tool_definitions() -> Vec<McpToolDef> {
             }),
         },
         McpToolDef {
-            name: "studio.run_script".into(),
+            name: "studio-run_script".into(),
             description: Some("Execute Luau code in Roblox Studio. Returns the result and any captured log output.".into()),
             input_schema: json!({
                 "type": "object",
@@ -276,7 +276,7 @@ fn tool_definitions() -> Vec<McpToolDef> {
             }),
         },
         McpToolDef {
-            name: "studio.checkpoint_begin".into(),
+            name: "studio-checkpoint_begin".into(),
             description: Some("Begin a ChangeHistoryService recording for undo/redo tracking".into()),
             input_schema: json!({
                 "type": "object",
@@ -290,7 +290,7 @@ fn tool_definitions() -> Vec<McpToolDef> {
             }),
         },
         McpToolDef {
-            name: "studio.checkpoint_end".into(),
+            name: "studio-checkpoint_end".into(),
             description: Some("End and commit a ChangeHistoryService recording".into()),
             input_schema: json!({
                 "type": "object",
@@ -308,7 +308,7 @@ fn tool_definitions() -> Vec<McpToolDef> {
             }),
         },
         McpToolDef {
-            name: "studio.checkpoint_undo".into(),
+            name: "studio-checkpoint_undo".into(),
             description: Some("Undo the last checkpoint or a specific checkpoint".into()),
             input_schema: json!({
                 "type": "object",
@@ -321,7 +321,7 @@ fn tool_definitions() -> Vec<McpToolDef> {
             }),
         },
         McpToolDef {
-            name: "studio.playtest_start".into(),
+            name: "studio-playtest_start".into(),
             description: Some("Start a playtest session in Roblox Studio".into()),
             input_schema: json!({
                 "type": "object",
@@ -336,7 +336,7 @@ fn tool_definitions() -> Vec<McpToolDef> {
             }),
         },
         McpToolDef {
-            name: "studio.playtest_stop".into(),
+            name: "studio-playtest_stop".into(),
             description: Some("Stop the current playtest session".into()),
             input_schema: json!({
                 "type": "object",
@@ -349,7 +349,7 @@ fn tool_definitions() -> Vec<McpToolDef> {
             }),
         },
         McpToolDef {
-            name: "studio.logs_subscribe".into(),
+            name: "studio-logs_subscribe".into(),
             description: Some("Subscribe to Studio log output via LogService. Returns existing history.".into()),
             input_schema: json!({
                 "type": "object",
@@ -371,7 +371,7 @@ fn tool_definitions() -> Vec<McpToolDef> {
             }),
         },
         McpToolDef {
-            name: "studio.logs_unsubscribe".into(),
+            name: "studio-logs_unsubscribe".into(),
             description: Some("Unsubscribe from Studio log output".into()),
             input_schema: json!({
                 "type": "object",
@@ -380,7 +380,7 @@ fn tool_definitions() -> Vec<McpToolDef> {
             }),
         },
         McpToolDef {
-            name: "studio.logs_get".into(),
+            name: "studio-logs_get".into(),
             description: Some("Fetch buffered log entries".into()),
             input_schema: json!({
                 "type": "object",
@@ -402,7 +402,7 @@ fn tool_definitions() -> Vec<McpToolDef> {
             }),
         },
         McpToolDef {
-            name: "studio.virtualuser_attach".into(),
+            name: "studio-virtualuser_attach".into(),
             description: Some("Attach VirtualUser controller for input simulation during playtests".into()),
             input_schema: json!({
                 "type": "object",
@@ -416,7 +416,7 @@ fn tool_definitions() -> Vec<McpToolDef> {
             }),
         },
         McpToolDef {
-            name: "studio.virtualuser_key".into(),
+            name: "studio-virtualuser_key".into(),
             description: Some("Simulate keyboard input via VirtualUser".into()),
             input_schema: json!({
                 "type": "object",
@@ -435,7 +435,7 @@ fn tool_definitions() -> Vec<McpToolDef> {
             }),
         },
         McpToolDef {
-            name: "studio.virtualuser_mouse_button".into(),
+            name: "studio-virtualuser_mouse_button".into(),
             description: Some("Simulate mouse button input via VirtualUser".into()),
             input_schema: json!({
                 "type": "object",
@@ -464,7 +464,7 @@ fn tool_definitions() -> Vec<McpToolDef> {
             }),
         },
         McpToolDef {
-            name: "studio.virtualuser_move_mouse".into(),
+            name: "studio-virtualuser_move_mouse".into(),
             description: Some("Move the virtual mouse cursor to screen coordinates".into()),
             input_schema: json!({
                 "type": "object",
@@ -482,7 +482,7 @@ fn tool_definitions() -> Vec<McpToolDef> {
             }),
         },
         McpToolDef {
-            name: "studio.npc_driver_start".into(),
+            name: "studio-npc_driver_start".into(),
             description: Some("Start an NPC automation driver to control a character in a playtest".into()),
             input_schema: json!({
                 "type": "object",
@@ -505,7 +505,7 @@ fn tool_definitions() -> Vec<McpToolDef> {
             }),
         },
         McpToolDef {
-            name: "studio.npc_driver_command".into(),
+            name: "studio-npc_driver_command".into(),
             description: Some("Send a command to an active NPC driver".into()),
             input_schema: json!({
                 "type": "object",
@@ -541,7 +541,7 @@ fn tool_definitions() -> Vec<McpToolDef> {
             }),
         },
         McpToolDef {
-            name: "studio.npc_driver_stop".into(),
+            name: "studio-npc_driver_stop".into(),
             description: Some("Stop an active NPC driver".into()),
             input_schema: json!({
                 "type": "object",
@@ -555,7 +555,7 @@ fn tool_definitions() -> Vec<McpToolDef> {
             }),
         },
         McpToolDef {
-            name: "studio.capture_screenshot".into(),
+            name: "studio-capture_screenshot".into(),
             description: Some("Capture a screenshot of the Studio viewport. Saves to the capture folder on disk.".into()),
             input_schema: json!({
                 "type": "object",
@@ -572,7 +572,7 @@ fn tool_definitions() -> Vec<McpToolDef> {
             }),
         },
         McpToolDef {
-            name: "studio.capture_video_start".into(),
+            name: "studio-capture_video_start".into(),
             description: Some("Start recording video of the Studio viewport".into()),
             input_schema: json!({
                 "type": "object",
@@ -589,7 +589,7 @@ fn tool_definitions() -> Vec<McpToolDef> {
             }),
         },
         McpToolDef {
-            name: "studio.capture_video_stop".into(),
+            name: "studio-capture_video_stop".into(),
             description: Some("Stop video recording".into()),
             input_schema: json!({
                 "type": "object",

@@ -110,7 +110,7 @@ Or manually add to your project's `.mcp.json` (or `~/.claude.json` for global):
 }
 ```
 
-Then restart Claude Code. The `studio.*` tools will be available.
+Then restart Claude Code. The `studio-*` tools will be available.
 
 #### Claude Desktop
 
@@ -136,7 +136,7 @@ Add the following:
 }
 ```
 
-Restart Claude Desktop after saving. The `studio.*` tools will appear in the tool picker.
+Restart Claude Desktop after saving. The `studio-*` tools will appear in the tool picker.
 
 ## Configuration
 
@@ -152,26 +152,26 @@ All 20 tools are available to the AI client:
 
 | Tool | Description |
 |---|---|
-| `studio.status` | Get connection status and playtest state |
-| `studio.run_script` | Execute Luau code in Studio |
-| `studio.checkpoint_begin` | Start ChangeHistoryService recording |
-| `studio.checkpoint_end` | Commit recording |
-| `studio.checkpoint_undo` | Undo last change |
-| `studio.playtest_start` | Start playtest (play/run mode) |
-| `studio.playtest_stop` | Stop playtest |
-| `studio.logs_subscribe` | Subscribe to log output |
-| `studio.logs_unsubscribe` | Unsubscribe from logs |
-| `studio.logs_get` | Fetch buffered log entries |
-| `studio.virtualuser_attach` | Attach VirtualUser for input sim |
-| `studio.virtualuser_key` | Simulate keyboard input |
-| `studio.virtualuser_mouse_button` | Simulate mouse button |
-| `studio.virtualuser_move_mouse` | Move virtual mouse |
-| `studio.npc_driver_start` | Start NPC automation driver |
-| `studio.npc_driver_command` | Send NPC command (move, jump, etc.) |
-| `studio.npc_driver_stop` | Stop NPC driver |
-| `studio.capture_screenshot` | Capture viewport screenshot |
-| `studio.capture_video_start` | Start video recording (limited support) |
-| `studio.capture_video_stop` | Stop video recording |
+| `studio-status` | Get connection status and playtest state |
+| `studio-run_script` | Execute Luau code in Studio |
+| `studio-checkpoint_begin` | Start ChangeHistoryService recording |
+| `studio-checkpoint_end` | Commit recording |
+| `studio-checkpoint_undo` | Undo last change |
+| `studio-playtest_start` | Start playtest (play/run mode) |
+| `studio-playtest_stop` | Stop playtest |
+| `studio-logs_subscribe` | Subscribe to log output |
+| `studio-logs_unsubscribe` | Unsubscribe from logs |
+| `studio-logs_get` | Fetch buffered log entries |
+| `studio-virtualuser_attach` | Attach VirtualUser for input sim |
+| `studio-virtualuser_key` | Simulate keyboard input |
+| `studio-virtualuser_mouse_button` | Simulate mouse button |
+| `studio-virtualuser_move_mouse` | Move virtual mouse |
+| `studio-npc_driver_start` | Start NPC automation driver |
+| `studio-npc_driver_command` | Send NPC command (move, jump, etc.) |
+| `studio-npc_driver_stop` | Stop NPC driver |
+| `studio-capture_screenshot` | Capture viewport screenshot |
+| `studio-capture_video_start` | Start video recording (limited support) |
+| `studio-capture_video_stop` | Stop video recording |
 
 ## Capture Folder
 
@@ -190,29 +190,29 @@ After setup, verify everything works:
 2. Open Studio, install plugin, connect with token
 3. From Claude Code (or any MCP client), run these tool calls:
 
-   studio.status
+   studio-status
    → Should show connected: true
 
-   studio.logs_subscribe({ includeHistory: true })
+   studio-logs_subscribe({ includeHistory: true })
    → Should return ok with log history
 
-   studio.run_script({ code: "print('Hello from MCP!') return 42" })
+   studio-run_script({ code: "print('Hello from MCP!') return 42" })
    → Should return value: "42" and the print appears in Studio Output
 
-   studio.checkpoint_begin({ name: "Test checkpoint" })
-   studio.run_script({ code: "local p = Instance.new('Part', workspace) p.Name = 'MCPTestPart'" })
-   studio.checkpoint_end({ checkpointId: "<id from begin>" })
-   studio.checkpoint_undo({})
+   studio-checkpoint_begin({ name: "Test checkpoint" })
+   studio-run_script({ code: "local p = Instance.new('Part', workspace) p.Name = 'MCPTestPart'" })
+   studio-checkpoint_end({ checkpointId: "<id from begin>" })
+   studio-checkpoint_undo({})
    → MCPTestPart should disappear from workspace
 
-   studio.playtest_start({ mode: "run" })
-   studio.virtualuser_attach({})
-   studio.virtualuser_key({ keyCode: "Space", action: "type" })
-   studio.capture_screenshot({ tag: "test" })
+   studio-playtest_start({ mode: "run" })
+   studio-virtualuser_attach({})
+   studio-virtualuser_key({ keyCode: "Space", action: "type" })
+   studio-capture_screenshot({ tag: "test" })
    → Check .roblox-captures/ for the screenshot file
-   studio.playtest_stop({})
+   studio-playtest_stop({})
 
-   studio.logs_unsubscribe({})
+   studio-logs_unsubscribe({})
 ```
 
 ## Security Notes
