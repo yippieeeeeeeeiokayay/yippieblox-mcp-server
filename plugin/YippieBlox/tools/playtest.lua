@@ -29,28 +29,23 @@ do
 	end
 end
 
--- Source code for the test runner Script that gets injected into ServerScriptService.
--- It reads test args, runs the code, captures logs, and calls EndTest with results.
-local TEST_RUNNER_SOURCE = [==[
+-- Build a test runner Script source with user code baked in.
+-- No loadstring needed — the code is embedded directly in the Script source.
+local function buildTestRunnerSource(userCode)
+	-- Escape the user code for embedding in a string literal.
+	-- We wrap the user code in a function call via pcall directly in the script.
+	return [[
 local StudioTestService = game:GetService("StudioTestService")
 local LogService = game:GetService("LogService")
 local RunService = game:GetService("RunService")
 
--- Only run during playtest
 if not RunService:IsRunning() then
 	return
 end
 
-local testArgs = StudioTestService:GetTestArgs()
-if not testArgs or type(testArgs) ~= "table" or not testArgs.code then
-	return
-end
-
-local code = testArgs.code
 local capturedLogs = {}
 local logConnection = nil
 
--- Map message types
 local MESSAGE_TYPE_MAP = {
 	[Enum.MessageType.MessageOutput] = "output",
 	[Enum.MessageType.MessageInfo] = "info",
@@ -58,7 +53,6 @@ local MESSAGE_TYPE_MAP = {
 	[Enum.MessageType.MessageError] = "error",
 }
 
--- Start capturing logs
 logConnection = LogService.MessageOut:Connect(function(message, messageType)
 	if string.sub(message, 1, 5) == "[MCP]" then return end
 	table.insert(capturedLogs, {
@@ -68,29 +62,18 @@ logConnection = LogService.MessageOut:Connect(function(message, messageType)
 	})
 end)
 
--- Compile and run the test code
 local startTime = os.clock()
-local fn, compileErr = loadstring(code, "=MCP:test_script")
-if not fn then
-	if logConnection then logConnection:Disconnect() end
-	StudioTestService:EndTest({
-		success = false,
-		error = "Compilation error: " .. tostring(compileErr),
-		logs = capturedLogs,
-		duration = os.clock() - startTime,
-	})
-	return
-end
 
-local ok, result = pcall(fn)
+local ok, result = pcall(function()
+]] .. userCode .. [[
+
+end)
+
 local duration = os.clock() - startTime
-
--- Give a brief moment for any async log output to arrive
 task.wait(0.1)
 
 if logConnection then logConnection:Disconnect() end
 
--- Extract errors from captured logs
 local errors = {}
 for _, log in ipairs(capturedLogs) do
 	if log.level == "error" or log.level == "warning" then
@@ -106,9 +89,10 @@ StudioTestService:EndTest({
 	errors = errors,
 	duration = duration,
 })
-]==]
+]]
+end
 
-local function injectTestRunner()
+local function injectTestRunner(userCode)
 	-- Remove old one
 	local existing = ServerScriptService:FindFirstChild(TEST_RUNNER_NAME)
 	if existing then
@@ -117,7 +101,7 @@ local function injectTestRunner()
 
 	local runner = Instance.new("Script")
 	runner.Name = TEST_RUNNER_NAME
-	runner.Source = TEST_RUNNER_SOURCE
+	runner.Source = buildTestRunnerSource(userCode)
 	runner.Parent = ServerScriptService
 end
 
@@ -145,7 +129,7 @@ function Playtest.play(args, ctx)
 
 	testThread = task.spawn(function()
 		local ok, err = pcall(function()
-			studioTestService:ExecutePlayModeAsync(nil)
+			studioTestService:ExecutePlayModeAsync({})
 		end)
 		if not ok then
 			lastError = tostring(err)
@@ -211,7 +195,7 @@ function Playtest.run(args, ctx)
 
 	testThread = task.spawn(function()
 		local ok, err = pcall(function()
-			studioTestService:ExecuteRunModeAsync(nil)
+			studioTestService:ExecuteRunModeAsync({})
 		end)
 		if not ok then
 			lastError = tostring(err)
@@ -311,8 +295,8 @@ function Playtest.testScript(args, ctx)
 	local mode = args.mode or "run"
 	local timeout = args.timeout or 30
 
-	-- Inject the test runner Script into ServerScriptService
-	injectTestRunner()
+	-- Inject the test runner Script with the user's code baked in
+	injectTestRunner(code)
 
 	print("[MCP] Running test script (" .. mode .. " mode, timeout: " .. timeout .. "s)")
 

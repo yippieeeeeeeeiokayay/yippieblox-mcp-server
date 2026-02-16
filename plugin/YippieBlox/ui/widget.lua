@@ -285,6 +285,10 @@ function Widget.create(pluginObj)
 		connectBtn.Text = text
 	end
 
+	function controller:toggleVisible()
+		dock.Enabled = not dock.Enabled
+	end
+
 	return controller
 end
 

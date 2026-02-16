@@ -148,13 +148,13 @@ Restart Claude Desktop after saving. The `studio-*` tools will appear in the too
 
 ## MCP Tools
 
-All 22 tools are available to the AI client:
+### Working Tools
 
 | Tool | Description |
 |---|---|
 | `studio-status` | Get connection status and playtest state |
-| `studio-run_script` | Execute Luau code in Studio (edit mode) |
-| `studio-test_script` | Run Luau code in a playtest session — auto-starts playtest, executes code in server context, captures all logs/errors, stops playtest, returns results |
+| `studio-run_script` | Execute Luau in edit mode only (NOT during playtest). For modifying the place, inspecting/creating instances. |
+| `studio-test_script` | Execute Luau in a playtest session — use instead of `run_script` when testing game logic, runtime behavior, Players, physics, etc. Auto-starts playtest, captures all logs/errors, stops playtest, returns results. |
 | `studio-checkpoint_begin` | Start ChangeHistoryService recording |
 | `studio-checkpoint_end` | Commit recording |
 | `studio-checkpoint_undo` | Undo last change |
@@ -164,16 +164,23 @@ All 22 tools are available to the AI client:
 | `studio-logs_subscribe` | Subscribe to log output |
 | `studio-logs_unsubscribe` | Unsubscribe from logs |
 | `studio-logs_get` | Fetch buffered log entries |
-| `studio-virtualuser_attach` | Attach VirtualUser for input sim |
-| `studio-virtualuser_key` | Simulate keyboard input |
-| `studio-virtualuser_mouse_button` | Simulate mouse button |
-| `studio-virtualuser_move_mouse` | Move virtual mouse |
-| `studio-npc_driver_start` | Start NPC automation driver |
-| `studio-npc_driver_command` | Send NPC command (move, jump, etc.) |
-| `studio-npc_driver_stop` | Stop NPC driver |
 | `studio-capture_screenshot` | Capture viewport screenshot |
-| `studio-capture_video_start` | Start video recording (limited support) |
-| `studio-capture_video_stop` | Stop video recording |
+
+### Disabled Tools (Roblox API restrictions)
+
+These tools are registered but **will not work** due to Roblox security restrictions that prevent plugin access:
+
+| Tool | Reason |
+|---|---|
+| `studio-virtualuser_attach` | VirtualInputManager is RobloxScriptSecurity (internal only); VirtualUser is LocalUserSecurity (command bar only) |
+| `studio-virtualuser_key` | Same as above |
+| `studio-virtualuser_mouse_button` | Same as above |
+| `studio-virtualuser_move_mouse` | Same as above |
+| `studio-npc_driver_start` | Depends on VirtualUser for input; ClickDetector:_fireClick() is undocumented internal API |
+| `studio-npc_driver_command` | Same as above |
+| `studio-npc_driver_stop` | Same as above |
+| `studio-capture_video_start` | CaptureService does not expose video recording API |
+| `studio-capture_video_stop` | Same as above |
 
 ## Capture Folder
 

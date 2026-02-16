@@ -15,6 +15,11 @@ local HttpService = game:GetService("HttpService")
 local RunService = game:GetService("RunService")
 local ServerScriptService = game:GetService("ServerScriptService")
 
+-- Don't run in client/server context during playtest — only in Edit mode
+if RunService:IsRunning() then
+	return
+end
+
 -- ─── Require Modules ──────────────────────────────────────────
 
 local Bridge = require(script.bridge)
@@ -116,9 +121,22 @@ end
 
 -- ─── Main Plugin Logic ────────────────────────────────────────
 
+-- Create toolbar button in the Plugins tab
+local toolbar = plugin:CreateToolbar("YippieBlox")
+local toggleButton = toolbar:CreateButton(
+	"YippieBlox MCP",
+	"Toggle the YippieBlox MCP panel",
+	"rbxassetid://4458901886" -- generic plugin icon
+)
+
 -- Create UI widget
 local widgetController = Widget.create(plugin)
 local commandTrace = CommandTrace.new(500)
+
+-- Wire toolbar button to toggle dock widget
+toggleButton.Click:Connect(function()
+	widgetController:toggleVisible()
+end)
 
 -- State
 local bridge = nil

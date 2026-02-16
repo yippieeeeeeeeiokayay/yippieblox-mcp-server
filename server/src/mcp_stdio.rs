@@ -250,7 +250,7 @@ fn tool_definitions() -> Vec<McpToolDef> {
         },
         McpToolDef {
             name: "studio-run_script".into(),
-            description: Some("Execute Luau code in Roblox Studio. Returns the result and any captured log output.".into()),
+            description: Some("Execute Luau code in Roblox Studio's edit mode (NOT during playtest). Use this for modifying the place, inspecting the data model, creating/editing instances, or any operation that doesn't need a running game. This does NOT work during playtest — use studio-test_script instead if you need to run code in a live game session with access to Players, physics, etc.".into()),
             input_schema: json!({
                 "type": "object",
                 "properties": {
@@ -351,7 +351,7 @@ fn tool_definitions() -> Vec<McpToolDef> {
         },
         McpToolDef {
             name: "studio-test_script".into(),
-            description: Some("Run a Luau test script inside a playtest session. Automatically starts a playtest, injects and executes the code in the server context, captures all output logs and errors, stops the playtest, and returns the results. Use this to test game logic, verify scripts work correctly, or check for runtime errors. The code runs with full access to game services (Workspace, Players, etc). Returns: success (bool), value (return value), error (if failed), logs (all output), errors (warnings/errors only), duration (seconds).".into()),
+            description: Some("Run Luau code in a playtest session with full game context. Use this instead of studio-run_script when you need to test game logic, verify runtime behavior, or access services that only work during gameplay (Players, physics, Humanoids, etc). Automatically starts a playtest, injects the code as a server Script, captures all output logs and errors, stops the playtest, and returns results. Returns: success (bool), value (return value), error (if failed), logs (all output), errors (warnings/errors only), duration (seconds).".into()),
             input_schema: json!({
                 "type": "object",
                 "properties": {

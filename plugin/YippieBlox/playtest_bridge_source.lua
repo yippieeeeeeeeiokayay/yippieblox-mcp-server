@@ -88,19 +88,7 @@ local MESSAGE_TYPE_MAP = {
 
 local function handleTool(toolName, args)
 	if toolName == "studio-run_script" then
-		local code = args.code
-		if not code or code == "" then
-			return false, "Missing required argument: code"
-		end
-		local fn, compileErr = loadstring(code, "=MCP:run_script")
-		if not fn then
-			return false, "Compilation error: " .. tostring(compileErr)
-		end
-		local ok, result = pcall(fn)
-		if not ok then
-			return false, "Runtime error: " .. tostring(result)
-		end
-		return true, { value = tostring(result) }
+		return false, "studio-run_script is not available during playtest (loadstring is restricted). Use studio-test_script instead, which bakes code directly into a Script."
 
 	elseif toolName == "studio-status" then
 		return true, {
