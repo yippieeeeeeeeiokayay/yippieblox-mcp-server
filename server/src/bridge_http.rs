@@ -34,7 +34,19 @@ pub async fn serve(config: Config, state: SharedState) -> anyhow::Result<()> {
         .with_state(app_state);
 
     let addr = std::net::SocketAddr::from(([127, 0, 0, 1], config.port));
-    let listener = tokio::net::TcpListener::bind(addr).await?;
+
+    // Enable SO_REUSEADDR so we can rebind quickly after a restart
+    let socket = socket2::Socket::new(
+        socket2::Domain::IPV4,
+        socket2::Type::STREAM,
+        Some(socket2::Protocol::TCP),
+    )?;
+    socket.set_reuse_address(true)?;
+    socket.set_nonblocking(true)?;
+    socket.bind(&addr.into())?;
+    socket.listen(128)?;
+    let listener = tokio::net::TcpListener::from_std(socket.into())?;
+
     tracing::info!("HTTP bridge listening on http://{addr}");
     axum::serve(listener, app).await?;
     Ok(())

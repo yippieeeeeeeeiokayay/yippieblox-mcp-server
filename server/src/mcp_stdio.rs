@@ -49,7 +49,7 @@ pub async fn run(state: SharedState) -> Result<()> {
             }
         };
 
-        tracing::debug!(method = %msg.method, id = ?msg.id, "Received MCP message");
+        tracing::info!(method = %msg.method, id = ?msg.id, "Received MCP message");
 
         // Notifications (no id) don't get a response
         if msg.id.is_none() {
@@ -169,9 +169,12 @@ async fn handle_tools_call(state: &SharedState, id: Value, params: Value) -> Jso
     tracing::info!(tool = %tool_name, request_id = %request_id, "Forwarding tool call to plugin");
 
     // Await plugin response with timeout
+    let start = std::time::Instant::now();
     match tokio::time::timeout(TOOL_CALL_TIMEOUT, rx).await {
         Ok(Ok(response)) => {
+            let elapsed = start.elapsed();
             if response.success {
+                tracing::info!(tool = %tool_name, elapsed_ms = elapsed.as_millis(), "Tool call succeeded");
                 let text = response
                     .result
                     .map(|v| {
@@ -188,11 +191,13 @@ async fn handle_tools_call(state: &SharedState, id: Value, params: Value) -> Jso
                 let error_msg = response
                     .error
                     .unwrap_or_else(|| "Unknown plugin error".to_string());
+                tracing::warn!(tool = %tool_name, elapsed_ms = elapsed.as_millis(), error = %error_msg, "Tool call failed");
                 let result = McpToolResult::error_text(error_msg);
                 JsonRpcResponse::success(id, result.to_value())
             }
         }
         Ok(Err(_)) => {
+            tracing::error!(tool = %tool_name, "Plugin disconnected while processing tool call");
             let result = McpToolResult::error_text("Plugin disconnected while processing tool call");
             JsonRpcResponse::success(id, result.to_value())
         }
