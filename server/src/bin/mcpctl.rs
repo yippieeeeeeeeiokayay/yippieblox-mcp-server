@@ -5,7 +5,7 @@ use serde_json::Value;
 #[command(name = "mcpctl", about = "Debug CLI for YippieBlox MCP Server")]
 struct Cli {
     /// Server port
-    #[arg(long, default_value = "3333", env = "YIPPIE_PORT")]
+    #[arg(long, default_value = "3334", env = "YIPPIE_PORT")]
     port: u16,
 
     /// Auth token

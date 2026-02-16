@@ -18,7 +18,7 @@ cargo build --release # release
 cargo run
 
 # With config
-YIPPIE_PORT=3333 YIPPIE_TOKEN=mytoken cargo run
+YIPPIE_PORT=3334 YIPPIE_TOKEN=mytoken cargo run
 
 # Release
 ./target/release/roblox-studio-yippieblox-mcp-server
@@ -30,7 +30,7 @@ All diagnostic logging goes to **stderr**. Stdout is reserved for MCP protocol m
 
 | Variable | Default | Description |
 |---|---|---|
-| `YIPPIE_PORT` | `3333` | HTTP bridge listen port |
+| `YIPPIE_PORT` | `3334` | HTTP bridge listen port |
 | `YIPPIE_TOKEN` | (auto-generated) | Bearer token for plugin auth |
 | `YIPPIE_CAPTURE_DIR` | `.roblox-captures/` | Screenshot save directory |
 | `RUST_LOG` | `info` | Log level filter (tracing) |

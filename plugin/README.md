@@ -36,7 +36,7 @@ This is required for the plugin to communicate with the localhost Rust server.
 ### 2. Configure the Plugin
 
 1. Open the **YippieBlox MCP** dock widget (appears after plugin loads)
-2. Enter the **Server URL** (default: `http://localhost:3333`)
+2. Enter the **Server URL** (default: `http://localhost:3334`)
 3. Enter the **Auth Token** (from the Rust server's stderr output)
 4. Click **Connect**
 
@@ -48,7 +48,7 @@ The status indicator turns green when connected.
 Enable HTTP requests in Game Settings > Security.
 
 ### "Trust check failed" or connection errors
-- Make sure you're using `http://localhost:3333`, not `http://127.0.0.1:3333`
+- Make sure you're using `http://localhost:3334`, not `http://127.0.0.1:3334`
 - Roblox may block direct IP addresses; `localhost` hostname is required
 
 ### Plugin doesn't appear

@@ -132,8 +132,8 @@ function Widget.create(pluginObj)
 	}).LayoutOrder = 2
 
 	local urlInput = createTextInput(frame, {
-		text = pluginObj:GetSetting("YippieBlox_ServerURL") or "http://localhost:3333",
-		placeholder = "http://localhost:3333",
+		text = pluginObj:GetSetting("YippieBlox_ServerURL") or "http://localhost:3334",
+		placeholder = "http://localhost:3334",
 		size = UDim2.new(1, -8, 0, 26),
 	})
 	urlInput.LayoutOrder = 3

@@ -20,10 +20,10 @@ cd server && cargo build --release
 cd server && cargo run
 
 # Run with explicit config (token is optional)
-YIPPIE_PORT=3333 cargo run --manifest-path server/Cargo.toml
+YIPPIE_PORT=3334 cargo run --manifest-path server/Cargo.toml
 
 # Run with auth enabled
-YIPPIE_PORT=3333 YIPPIE_TOKEN=mysecret cargo run --manifest-path server/Cargo.toml
+YIPPIE_PORT=3334 YIPPIE_TOKEN=mysecret cargo run --manifest-path server/Cargo.toml
 
 # Run the debug CLI helper
 cargo run --manifest-path server/Cargo.toml --bin mcpctl -- status
@@ -40,7 +40,7 @@ Add to your `.mcp.json` (project) or `~/.claude.json` (global):
       "command": "/path/to/yippieblox_mcp_server/server/target/release/roblox-studio-yippieblox-mcp-server",
       "args": ["--stdio"],
       "env": {
-        "YIPPIE_PORT": "3333"
+        "YIPPIE_PORT": "3334"
       }
     }
   }

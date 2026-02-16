@@ -13,7 +13,7 @@ Claude Code (AI client)
 │  • stdin/stdout ↔ MCP      │
 │  • localhost HTTP bridge    │
 └────────────────────────────┘
-    │  HTTP on 127.0.0.1:3333
+    │  HTTP on 127.0.0.1:3334
     ▼
 ┌────────────────────────────┐
 │  Roblox Studio Plugin      │
@@ -76,7 +76,7 @@ YIPPIE_TOKEN=mysecrettoken ./server/target/release/roblox-studio-yippieblox-mcp-
 ### 5. Connect the Plugin
 
 1. In Studio, open the **YippieBlox MCP** dock widget (appears at the bottom)
-2. Set the Server URL (default: `http://localhost:3333`)
+2. Set the Server URL (default: `http://localhost:3334`)
 3. Paste the auth token from the server output
 4. Click **Connect**
 
@@ -89,7 +89,7 @@ Run this from your project directory:
 ```bash
 claude mcp add roblox-studio-yippieblox \
   --env YIPPIE_TOKEN=mysecrettoken \
-  --env YIPPIE_PORT=3333 \
+  --env YIPPIE_PORT=3334 \
   -- /absolute/path/to/server/target/release/roblox-studio-yippieblox-mcp-server --stdio
 ```
 
@@ -103,7 +103,7 @@ Or manually add to your project's `.mcp.json` (or `~/.claude.json` for global):
       "args": ["--stdio"],
       "env": {
         "YIPPIE_TOKEN": "mysecrettoken",
-        "YIPPIE_PORT": "3333"
+        "YIPPIE_PORT": "3334"
       }
     }
   }
@@ -129,7 +129,7 @@ Add the following:
       "args": ["--stdio"],
       "env": {
         "YIPPIE_TOKEN": "mysecrettoken",
-        "YIPPIE_PORT": "3333"
+        "YIPPIE_PORT": "3334"
       }
     }
   }
@@ -142,7 +142,7 @@ Restart Claude Desktop after saving. The `studio.*` tools will appear in the too
 
 | Env Variable | Default | Description |
 |---|---|---|
-| `YIPPIE_PORT` | `3333` | HTTP bridge port |
+| `YIPPIE_PORT` | `3334` | HTTP bridge port |
 | `YIPPIE_TOKEN` | (auto-generated) | Bearer token for auth |
 | `YIPPIE_CAPTURE_DIR` | `.roblox-captures/` | Screenshot save directory |
 

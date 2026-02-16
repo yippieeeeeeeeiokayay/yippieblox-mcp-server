@@ -13,6 +13,31 @@ use crate::config::Config;
 use crate::state::SharedState;
 use crate::types::*;
 
+/// Kill any process currently listening on the given port.
+fn kill_port_holder(port: u16) {
+    let output = std::process::Command::new("lsof")
+        .args(["-ti", &format!(":{port}")])
+        .output();
+
+    if let Ok(output) = output {
+        let pids = String::from_utf8_lossy(&output.stdout);
+        let my_pid = std::process::id().to_string();
+        for pid in pids.split_whitespace() {
+            if pid == my_pid {
+                continue; // don't kill ourselves
+            }
+            tracing::info!(pid = pid, port = port, "Killing existing process on port");
+            let _ = std::process::Command::new("kill")
+                .args(["-9", pid])
+                .output();
+        }
+        if !pids.trim().is_empty() {
+            // Brief pause to let the OS release the socket
+            std::thread::sleep(std::time::Duration::from_millis(500));
+        }
+    }
+}
+
 #[derive(Clone)]
 struct AppState {
     shared: SharedState,
@@ -35,17 +60,10 @@ pub async fn serve(config: Config, state: SharedState) -> anyhow::Result<()> {
 
     let addr = std::net::SocketAddr::from(([127, 0, 0, 1], config.port));
 
-    // Enable SO_REUSEADDR so we can rebind quickly after a restart
-    let socket = socket2::Socket::new(
-        socket2::Domain::IPV4,
-        socket2::Type::STREAM,
-        Some(socket2::Protocol::TCP),
-    )?;
-    socket.set_reuse_address(true)?;
-    socket.set_nonblocking(true)?;
-    socket.bind(&addr.into())?;
-    socket.listen(128)?;
-    let listener = tokio::net::TcpListener::from_std(socket.into())?;
+    // Kill any existing process holding this port
+    kill_port_holder(config.port);
+
+    let listener = tokio::net::TcpListener::bind(addr).await?;
 
     tracing::info!("HTTP bridge listening on http://{addr}");
     axum::serve(listener, app).await?;

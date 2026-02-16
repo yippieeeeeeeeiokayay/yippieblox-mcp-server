@@ -12,7 +12,7 @@ pub fn load() -> Result<Config> {
     let port: u16 = std::env::var("YIPPIE_PORT")
         .ok()
         .and_then(|v| v.parse().ok())
-        .unwrap_or(3333);
+        .unwrap_or(3334);
 
     let token = std::env::var("YIPPIE_TOKEN").ok();
     if token.is_none() {
