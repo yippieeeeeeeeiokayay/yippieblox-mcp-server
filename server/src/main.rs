@@ -7,7 +7,6 @@ mod types;
 
 use anyhow::Result;
 use clap::Parser;
-use std::fs::OpenOptions;
 
 #[derive(Parser)]
 #[command(name = "roblox-studio-yippieblox-mcp-server")]
@@ -22,28 +21,15 @@ struct Cli {
 async fn main() -> Result<()> {
     let _cli = Cli::parse();
 
-    // Log to both stderr AND a file so logs are always accessible.
-    // tail -f ~/.yippieblox-mcp.log to watch live.
-    let log_path = std::env::var("HOME")
-        .map(|h| format!("{h}/.yippieblox-mcp.log"))
-        .unwrap_or_else(|_| "/tmp/yippieblox-mcp.log".into());
-
-    let log_file = OpenOptions::new()
-        .create(true)
-        .append(true)
-        .open(&log_path)
-        .expect("Failed to open log file");
-
+    // Log to stderr (visible in Claude Desktop logs and terminal).
+    // stdout is reserved for MCP JSON-RPC protocol messages.
     tracing_subscriber::fmt()
-        .with_writer(std::sync::Mutex::new(log_file))
+        .with_writer(std::io::stderr)
         .with_env_filter(
             tracing_subscriber::EnvFilter::try_from_default_env()
                 .unwrap_or_else(|_| tracing_subscriber::EnvFilter::new("info")),
         )
-        .with_ansi(false)
         .init();
-
-    eprintln!("Logs: {log_path}");
 
     let config = config::load()?;
     tracing::info!(
