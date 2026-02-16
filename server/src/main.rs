@@ -45,7 +45,16 @@ async fn main() -> Result<()> {
     let http_config = config.clone();
     let http_state = state.clone();
     let http_handle = tokio::spawn(async move {
-        bridge_http::serve(http_config, http_state).await
+        // Retry binding the HTTP bridge with backoff
+        loop {
+            match bridge_http::serve(http_config.clone(), http_state.clone()).await {
+                Ok(()) => break,
+                Err(e) => {
+                    tracing::warn!("HTTP bridge failed: {e}. Retrying in 3s...");
+                    tokio::time::sleep(std::time::Duration::from_secs(3)).await;
+                }
+            }
+        }
     });
 
     let stdio_state = state.clone();
@@ -53,15 +62,16 @@ async fn main() -> Result<()> {
         mcp_stdio::run(stdio_state).await
     });
 
-    // Exit when either task finishes
+    // Exit when STDIO closes (client disconnected). HTTP bridge runs in background.
     tokio::select! {
-        result = http_handle => {
-            tracing::error!("HTTP bridge exited");
-            result??;
+        _ = http_handle => {
+            tracing::info!("HTTP bridge task ended");
         }
         result = stdio_handle => {
             tracing::info!("MCP STDIO loop exited (client disconnected)");
-            result??;
+            if let Err(e) = result {
+                tracing::error!("STDIO task error: {e}");
+            }
         }
     }
 
