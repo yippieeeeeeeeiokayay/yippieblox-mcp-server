@@ -9,7 +9,7 @@ use crate::types::*;
 
 const SERVER_NAME: &str = "roblox-studio-yippieblox-mcp-server";
 const SERVER_VERSION: &str = env!("CARGO_PKG_VERSION");
-const PROTOCOL_VERSION: &str = "2024-11-05";
+const PROTOCOL_VERSION: &str = "2025-11-25";
 const TOOL_CALL_TIMEOUT: Duration = Duration::from_secs(30);
 
 /// Run the MCP STDIO loop: read JSON-RPC from stdin, write responses to stdout.
