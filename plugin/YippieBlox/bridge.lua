@@ -25,13 +25,17 @@ function Bridge:_request(method, path, body)
 		url = url .. sep .. "clientId=" .. self.clientId
 	end
 
+	local headers = {
+		["Content-Type"] = "application/json",
+	}
+	if self.token and self.token ~= "" then
+		headers["Authorization"] = "Bearer " .. self.token
+	end
+
 	local requestOptions = {
 		Url = url,
 		Method = method,
-		Headers = {
-			["Authorization"] = "Bearer " .. self.token,
-			["Content-Type"] = "application/json",
-		},
+		Headers = headers,
 	}
 	if body then
 		requestOptions.Body = HttpService:JSONEncode(body)

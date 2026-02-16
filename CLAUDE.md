@@ -19,7 +19,10 @@ cd server && cargo build --release
 # Run the MCP server (STDIO mode — used by Claude Code)
 cd server && cargo run
 
-# Run with explicit config
+# Run with explicit config (token is optional)
+YIPPIE_PORT=3333 cargo run --manifest-path server/Cargo.toml
+
+# Run with auth enabled
 YIPPIE_PORT=3333 YIPPIE_TOKEN=mysecret cargo run --manifest-path server/Cargo.toml
 
 # Run the debug CLI helper
@@ -37,7 +40,6 @@ Add to your `.mcp.json` (project) or `~/.claude.json` (global):
       "command": "/path/to/yippieblox_mcp_server/server/target/release/roblox-studio-yippieblox-mcp-server",
       "args": ["--stdio"],
       "env": {
-        "YIPPIE_TOKEN": "your-secret-token",
         "YIPPIE_PORT": "3333"
       }
     }
@@ -113,12 +115,25 @@ All tools are namespaced under `studio.*`:
 - **Agents must request permission** for this folder before reading files — do not request broad filesystem access
 - To allowlist in Claude Code: use `/permissions` to add the capture folder path
 
+## Auth
+
+- `YIPPIE_TOKEN` is **optional**. If not set, the HTTP bridge accepts all localhost requests without auth.
+- If set, both the Rust server and the Studio plugin must use the same token (Bearer auth).
+- The plugin's token field in the UI can be left blank when auth is disabled.
+
+## Plugin Behavior
+
+- The plugin **auto-starts** when Studio opens (it's a Script in the Plugins folder).
+- On load it prints `[MCP] YippieBlox MCP Bridge Plugin loaded` to the Output window.
+- If a server URL was previously saved, it **auto-connects** on startup (token optional).
+- After building, copy to Studio: `cp plugin/YippieBlox.rbxmx ~/Documents/Roblox/Plugins/`
+
 ## Don'ts
 
 - **No network beyond localhost** — The HTTP bridge binds to `127.0.0.1` only. Never expose externally.
 - **No writing outside capture folder** — The server only writes to the capture dir and its own config. No other filesystem writes.
 - **No unbounded buffers** — Log ring buffer and command trace are bounded (default 500 entries).
-- **No committing secrets** — The auth token is config/env only, never committed to repo.
+- **No committing secrets** — If using a token, it's config/env only, never committed to repo.
 - **No skipping feature detection** — Every Roblox API call (StudioTestService, CaptureService, VirtualUser) must be feature-detected with a clear error if unavailable.
 
 ## Testing

@@ -189,10 +189,7 @@ local function doConnect(serverUrl, token)
 		widgetController:setStatus("Error: No server URL", false)
 		return
 	end
-	if not token or token == "" then
-		widgetController:setStatus("Error: No auth token", false)
-		return
-	end
+	-- Token is optional — if blank, connect without auth
 
 	-- Check HTTP is enabled
 	if not checkHttpEnabled() then
@@ -233,11 +230,12 @@ end)
 print("[MCP] YippieBlox MCP Bridge Plugin loaded")
 print("[MCP] Supported tools: " .. table.concat(ToolRouter.toolNames(), ", "))
 
--- Auto-connect if settings are saved
+-- Auto-connect if server URL is saved (token is optional)
 local savedUrl = plugin:GetSetting("YippieBlox_ServerURL")
-local savedToken = plugin:GetSetting("YippieBlox_Token")
-if savedUrl and savedToken and savedUrl ~= "" and savedToken ~= "" then
+local savedToken = plugin:GetSetting("YippieBlox_Token") or ""
+if savedUrl and savedUrl ~= "" then
 	task.delay(1, function()
+		print("[MCP] Auto-connecting to " .. savedUrl)
 		doConnect(savedUrl, savedToken)
 	end)
 end
