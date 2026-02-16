@@ -60,13 +60,13 @@ Add to your MCP client config (e.g. `~/.claude/claude_desktop_config.json` or Cl
     types.rs                     ← Shared types (requests, responses, events, tools)
     captures.rs                  ← Capture file handling + index.json management
     bin/mcpctl.rs                ← Debug CLI for bridge + captures
-/plugin/                         ← Roblox Studio plugin (Luau)
-  src/
-    init.server.luau             ← Plugin entry point
-    bridge.client.luau           ← HTTP poll/push logic
-    tools/*.luau                 ← Tool handler modules
-    ui/*.luau                    ← Toolbar widget + command trace textbox
-    util/*.luau                  ← JSON, HTTP, ring buffer helpers
+/plugin/                         ← Roblox Studio plugin
+  YippieBlox/                    ← Copy this folder to Studio Plugins dir
+    init.server.lua              ← Plugin entry point
+    bridge.lua                   ← HTTP poll/push logic
+    tools/*.lua                  ← Tool handler modules
+    ui/*.lua                     ← Dock widget + command trace
+    util/*.lua                   ← Ring buffer helpers
 ```
 
 ## Conventions

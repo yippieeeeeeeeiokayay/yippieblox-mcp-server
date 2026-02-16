@@ -1,0 +1,19 @@
+# Rust
+/server/target/
+**/*.rs.bk
+
+# Captures (local data, not committed)
+.roblox-captures/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Claude local settings
+.claude/
