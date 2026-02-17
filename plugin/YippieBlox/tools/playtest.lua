@@ -254,7 +254,7 @@ function Playtest.stop(args, ctx)
 	local stoppedSessionId = currentSession and currentSession.sessionId or nil
 
 	local ok, err = pcall(function()
-		studioTestService:EndTest(nil)
+		studioTestService:EndTest({})
 	end)
 	if not ok then
 		return false, "EndTest() failed: " .. tostring(err)

@@ -81,6 +81,7 @@ Add to your `.mcp.json` (project) or `~/.claude.json` (global):
 - **Error handling**: All plugin tool handlers must be `pcall`-wrapped. Rust uses `anyhow` for internal errors, structured MCP errors for client-facing.
 - **Logging**: Rust uses `tracing` crate. Plugin prefixes internal messages with `[MCP]` (which are filtered from log capture to avoid loops).
 - **README.md must stay up to date**: When adding, removing, or renaming tools, changing build steps, updating config options, or modifying the smoke test — always update README.md to match. The tool table, smoke test section, and setup instructions must reflect the current state of the code.
+- **No Co-Authored-By in commits**: Do not add `Co-Authored-By` trailers to git commit messages.
 
 ## MCP Tool Schema Summary
 
