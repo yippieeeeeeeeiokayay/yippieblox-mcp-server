@@ -9,14 +9,19 @@ local RunService = game:GetService("RunService")
 local LogService = game:GetService("LogService")
 local Players = game:GetService("Players")
 
+print("[MCP-Playtest] Bridge script loaded, IsRunning: " .. tostring(RunService:IsRunning()))
+
 -- Only run during playtest (server context)
 if not RunService:IsRunning() then
+	print("[MCP-Playtest] Not in playtest, exiting")
 	return
 end
 
 -- Read config from StringValue children
 local urlValue = script:FindFirstChild("_YippieBlox_URL")
 local tokenValue = script:FindFirstChild("_YippieBlox_Token")
+
+print("[MCP-Playtest] URL value: " .. tostring(urlValue) .. ", Token value: " .. tostring(tokenValue))
 
 if not urlValue then
 	warn("[MCP-Playtest] No server URL configured, exiting")
@@ -92,6 +97,7 @@ local MESSAGE_TYPE_MAP = {
 local MOVEMENT_KEYS = { W = true, A = true, S = true, D = true }
 local virtualKeys = {}
 local heartbeatConn = nil
+local networkOwnerClaimed = false
 
 local function getPlayerCharacterHumanoid()
 	local players = Players:GetPlayers()
@@ -101,6 +107,40 @@ local function getPlayerCharacterHumanoid()
 	if not character then return player, nil, nil end
 	local humanoid = character:FindFirstChildOfClass("Humanoid")
 	return player, character, humanoid
+end
+
+-- Claim server network ownership so client ControlScript doesn't override
+-- our Humanoid:Move() calls. Without this, the client calls Move(Vector3.zero)
+-- every frame, causing stuttering.
+local function claimNetworkOwnership()
+	if networkOwnerClaimed then return end
+	local _, character, _ = getPlayerCharacterHumanoid()
+	if not character then return end
+	local root = character:FindFirstChild("HumanoidRootPart")
+	if root then
+		pcall(function()
+			root:SetNetworkOwner(nil) -- nil = server owns
+		end)
+		networkOwnerClaimed = true
+		print("[MCP-Playtest] Claimed server network ownership of character")
+	end
+end
+
+local function releaseNetworkOwnership()
+	if not networkOwnerClaimed then return end
+	local player, character, _ = getPlayerCharacterHumanoid()
+	if not character or not player then
+		networkOwnerClaimed = false
+		return
+	end
+	local root = character:FindFirstChild("HumanoidRootPart")
+	if root then
+		pcall(function()
+			root:SetNetworkOwner(player) -- give back to client
+		end)
+		print("[MCP-Playtest] Released network ownership back to client")
+	end
+	networkOwnerClaimed = false
 end
 
 local function updateMovement()
@@ -131,6 +171,7 @@ local function cleanupVirtualInput()
 		heartbeatConn = nil
 	end
 	virtualKeys = {}
+	releaseNetworkOwnership()
 end
 
 -- ─── NPC Driver State ─────────────────────────────────────────
@@ -247,8 +288,7 @@ local function handleTool(toolName, args)
 		end
 
 		local keyCode = args.keyCode
-		local action = args.action or "type"
-		local duration = args.duration
+		local action = args.action or "down"
 		if not keyCode then
 			return false, "Missing required argument: keyCode"
 		end
@@ -258,33 +298,34 @@ local function handleTool(toolName, args)
 			return true, { key = "Space", action = "jump", state = humanoid:GetState().Name }
 
 		elseif keyCode == "LeftShift" or keyCode == "RightShift" then
-			if action == "down" then
-				humanoid.WalkSpeed = 32
-			elseif action == "up" then
+			if action == "up" then
 				humanoid.WalkSpeed = 16
 			else
 				humanoid.WalkSpeed = 32
-				task.wait(duration or 0.5)
-				humanoid.WalkSpeed = 16
 			end
 			return true, { key = keyCode, action = action, walkSpeed = humanoid.WalkSpeed }
 
 		elseif MOVEMENT_KEYS[keyCode] then
 			ensureHeartbeat()
-			if action == "down" then
-				virtualKeys[keyCode] = true
-			elseif action == "up" then
+			claimNetworkOwnership()
+			if action == "up" then
 				virtualKeys[keyCode] = nil
+				-- Release network ownership when all keys are released
+				local anyHeld = false
+				for _, v in pairs(virtualKeys) do
+					if v then anyHeld = true break end
+				end
+				if not anyHeld then
+					releaseNetworkOwnership()
+				end
 			else
 				virtualKeys[keyCode] = true
-				task.wait(duration or 1)
-				virtualKeys[keyCode] = nil
 			end
 			local held = {}
 			for k, v in pairs(virtualKeys) do
 				if v then table.insert(held, k) end
 			end
-			return true, { key = keyCode, action = action, duration = duration or 1, heldKeys = held }
+			return true, { key = keyCode, action = action, heldKeys = held }
 
 		else
 			return false, "Unsupported keyCode: " .. tostring(keyCode) .. ". Supported: W, A, S, D, Space, LeftShift, RightShift"

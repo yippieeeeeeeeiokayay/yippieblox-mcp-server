@@ -1,6 +1,6 @@
 [package]
 name = "roblox-studio-yippieblox-mcp-server"
-version = "0.2.1"
+version = "0.3.0"
 edition = "2021"
 description = "MCP server bridging AI coding assistants with Roblox Studio"
 

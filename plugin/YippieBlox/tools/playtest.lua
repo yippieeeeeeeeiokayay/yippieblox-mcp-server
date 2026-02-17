@@ -13,6 +13,12 @@ local nextSessionId = 1
 local testThread = nil
 local lastError = nil
 
+--- Returns true if a playtest session is currently active (play or run mode).
+--- Used by the poll loop to pause and let the playtest bridge handle requests.
+function Playtest.isActive()
+	return currentSession ~= nil
+end
+
 local TEST_RUNNER_NAME = "_YippieBloxTestRunner"
 
 -- Get StudioTestService
@@ -127,6 +133,30 @@ function Playtest.play(args, ctx)
 	nextSessionId = nextSessionId + 1
 	lastError = nil
 
+	-- Verify bridge Script exists in ServerScriptService
+	pcall(function()
+		local sss = game:GetService("ServerScriptService")
+		local bridgeScript = sss:FindFirstChild("_YippieBloxPlaytestBridge")
+		if bridgeScript then
+			local childCount = #bridgeScript:GetChildren()
+			print("[MCP] Bridge script found in SSS, children: " .. tostring(childCount))
+		else
+			warn("[MCP] Bridge script NOT found in SSS! Listing SSS children:")
+			for _, child in ipairs(sss:GetChildren()) do
+				warn("[MCP]   " .. child.ClassName .. " - " .. child.Name)
+			end
+		end
+	end)
+
+	-- Set currentSession BEFORE starting the async operation so the poll loop
+	-- pauses immediately. RunService:IsRunning() returns false in Edit DataModel
+	-- during Play mode, so we can't rely on it to detect playtest state.
+	currentSession = {
+		sessionId = sessionId,
+		mode = "play",
+		startTime = os.clock(),
+	}
+
 	testThread = task.spawn(function()
 		local ok, err = pcall(function()
 			studioTestService:ExecutePlayModeAsync({})
@@ -154,14 +184,6 @@ function Playtest.play(args, ctx)
 		return false, "ExecutePlayModeAsync failed: " .. lastError
 	end
 
-	local isRunning = pcall(function() return RunService:IsRunning() end) and RunService:IsRunning()
-
-	currentSession = {
-		sessionId = sessionId,
-		mode = "play",
-		startTime = os.clock(),
-	}
-
 	if ctx and ctx.bridge then
 		ctx.bridge:pushEvent("studio-playtest_state", {
 			active = true,
@@ -170,12 +192,11 @@ function Playtest.play(args, ctx)
 		})
 	end
 
-	print("[MCP] Play mode started (session: " .. sessionId .. ", isRunning: " .. tostring(isRunning) .. ")")
+	print("[MCP] Play mode started (session: " .. sessionId .. ")")
 	return true, {
 		sessionId = sessionId,
 		status = "started",
 		mode = "play",
-		isRunning = isRunning,
 		service = "StudioTestService",
 	}
 end
@@ -192,6 +213,14 @@ function Playtest.run(args, ctx)
 	local sessionId = "session_" .. tostring(nextSessionId)
 	nextSessionId = nextSessionId + 1
 	lastError = nil
+
+	-- Set currentSession BEFORE starting the async operation so the poll loop
+	-- pauses immediately.
+	currentSession = {
+		sessionId = sessionId,
+		mode = "run",
+		startTime = os.clock(),
+	}
 
 	testThread = task.spawn(function()
 		local ok, err = pcall(function()
@@ -220,14 +249,6 @@ function Playtest.run(args, ctx)
 		return false, "ExecuteRunModeAsync failed: " .. lastError
 	end
 
-	local isRunning = pcall(function() return RunService:IsRunning() end) and RunService:IsRunning()
-
-	currentSession = {
-		sessionId = sessionId,
-		mode = "run",
-		startTime = os.clock(),
-	}
-
 	if ctx and ctx.bridge then
 		ctx.bridge:pushEvent("studio-playtest_state", {
 			active = true,
@@ -236,12 +257,11 @@ function Playtest.run(args, ctx)
 		})
 	end
 
-	print("[MCP] Run mode started (session: " .. sessionId .. ", isRunning: " .. tostring(isRunning) .. ")")
+	print("[MCP] Run mode started (session: " .. sessionId .. ")")
 	return true, {
 		sessionId = sessionId,
 		status = "started",
 		mode = "run",
-		isRunning = isRunning,
 		service = "StudioTestService",
 	}
 end

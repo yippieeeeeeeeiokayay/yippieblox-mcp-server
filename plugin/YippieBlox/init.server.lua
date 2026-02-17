@@ -24,6 +24,7 @@ end
 
 local Bridge = require(script.bridge)
 local ToolRouter = require(script.tools)
+local Playtest = require(script.tools.playtest)
 local Widget = require(script.ui.widget)
 local CommandTrace = require(script.ui.command_trace)
 local PLAYTEST_BRIDGE_SOURCE = require(script.playtest_bridge_source)
@@ -111,6 +112,23 @@ local function injectPlaytestBridge(serverUrl, token)
 	print("[MCP] Injected playtest bridge into ServerScriptService")
 end
 
+local function ensurePlaytestBridge()
+	-- Always re-inject the bridge before tool dispatch.
+	-- checkpoint_undo can destroy the script or its children (URL/Token StringValues),
+	-- leaving a broken bridge that won't connect. Force fresh injection every time.
+	if currentServerUrl then
+		local existing = ServerScriptService:FindFirstChild(BRIDGE_SCRIPT_NAME)
+		if not existing or not existing:FindFirstChild("_YippieBlox_URL") then
+			if existing then
+				print("[MCP] Bridge script found but missing config children, re-injecting...")
+			else
+				print("[MCP] Bridge script missing from SSS, re-injecting...")
+			end
+			injectPlaytestBridge(currentServerUrl, currentToken)
+		end
+	end
+end
+
 local function removePlaytestBridge()
 	local existing = ServerScriptService:FindFirstChild(BRIDGE_SCRIPT_NAME)
 	if existing then
@@ -150,6 +168,9 @@ local features = detectFeatures()
 
 -- Build context table passed to tool handlers
 local function makeContext()
+	-- Ensure bridge script exists before every dispatch
+	-- (checkpoint_undo can destroy it)
+	ensurePlaytestBridge()
 	return {
 		features = features,
 		bridge = bridge,
@@ -171,21 +192,16 @@ local function startPollLoop()
 		local MAX_FAILURES = 3
 
 		while connected do
-			-- Pause polling during playtest — HttpService is blocked in plugin context.
-			-- The injected server-side Script handles tool calls during playtest.
-			if RunService:IsRunning() then
-				if not pollPaused then
-					pollPaused = true
-					print("[MCP] Plugin polling paused (playtest active — server-side bridge takes over)")
-					widgetController:setStatus("Playtest active (server bridge)", true)
-				end
-				task.wait(1)
-				continue
-			elseif pollPaused then
+			-- Note: We do NOT pause polling during Play mode playtest.
+			-- RunService:IsRunning() returns false in the Edit DataModel during Play mode,
+			-- so HttpService works fine from the plugin context. The plugin handles
+			-- playtest_stop, logs, checkpoint, and status tools directly.
+			-- Only virtualuser/npc_driver tools require the playtest bridge (they use
+			-- Humanoid APIs that only exist in the Play DataModel).
+			if pollPaused then
 				pollPaused = false
-				print("[MCP] Plugin polling resumed (playtest ended)")
+				print("[MCP] Plugin polling resumed")
 				widgetController:setStatus("Reconnecting...", true)
-				-- Re-register since the server may have timed out the client
 				local ok, clientId = bridge:register()
 				if ok then
 					widgetController:setStatus("Connected (" .. clientId .. ")", true)
@@ -207,6 +223,14 @@ local function startPollLoop()
 						local requestId = req.request_id or "?"
 
 						print("[MCP] <- " .. toolName .. " (id: " .. requestId .. ")")
+
+						-- Force re-inject bridge before starting any playtest
+						if toolName == "studio-playtest_play" or toolName == "studio-playtest_run" or toolName == "studio-test_script" then
+							if currentServerUrl then
+								print("[MCP] Force re-injecting bridge before playtest...")
+								injectPlaytestBridge(currentServerUrl, currentToken)
+							end
+						end
 
 						local success, result = ToolRouter.dispatch(toolName, arguments, makeContext())
 						local elapsed = os.clock() - startTime

@@ -231,10 +231,25 @@ async fn handle_status_tool(state: &SharedState, id: Value) -> JsonRpcResponse {
     let connected = state.has_connected_client().await;
     let client_id = state.first_client_id().await;
     let (playtest_active, session_id, mode) = state.playtest_info().await;
+    let clients: Vec<Value> = state
+        .client_info()
+        .await
+        .into_iter()
+        .map(|(id, version, last_poll, is_bridge)| {
+            let age_secs = (chrono::Utc::now() - last_poll).num_seconds();
+            json!({
+                "clientId": id,
+                "version": version,
+                "isBridge": is_bridge,
+                "lastPollSecsAgo": age_secs,
+            })
+        })
+        .collect();
 
     let result = json!({
         "connected": connected,
         "clientId": client_id,
+        "clients": clients,
         "playtest": {
             "active": playtest_active,
             "sessionId": session_id,
@@ -442,7 +457,7 @@ fn tool_definitions() -> Vec<McpToolDef> {
         },
         McpToolDef {
             name: "studio-virtualuser_key".into(),
-            description: Some("Simulate keyboard input to control the player character during a Play mode playtest (F5). Supports WASD movement, Space for jump, LeftShift/RightShift for sprint. Use 'type' action with 'duration' for smooth sustained movement (e.g. hold W for 3 seconds). Only works during Play mode with a spawned character.".into()),
+            description: Some("Simulate holding/releasing keyboard keys to control the player character during a Play mode playtest (F5). Keys stay held until explicitly released with action 'up'. Use 'down' to start holding a key and 'up' to release it. For example: send W down to start walking, do other things, then send W up to stop. Space triggers a single jump. Only works during Play mode with a spawned character.".into()),
             input_schema: json!({
                 "type": "object",
                 "properties": {
@@ -453,15 +468,11 @@ fn tool_definitions() -> Vec<McpToolDef> {
                     },
                     "action": {
                         "type": "string",
-                        "enum": ["down", "up", "type"],
-                        "description": "'type' = hold key for duration then release (default 1s), 'down' = hold indefinitely, 'up' = release"
-                    },
-                    "duration": {
-                        "type": "number",
-                        "description": "Seconds to hold the key when action is 'type'. Default: 1 for movement keys, 0.5 for shift. Ignored for down/up."
+                        "enum": ["down", "up"],
+                        "description": "'down' = start holding key (default), 'up' = release key. Keys stay held until released."
                     }
                 },
-                "required": ["keyCode", "action"]
+                "required": ["keyCode"]
             }),
         },
         McpToolDef {

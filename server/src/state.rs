@@ -75,16 +75,44 @@ impl SharedState {
         self.0.clients.lock().await.remove(client_id);
     }
 
+    /// Remove clients that haven't polled in over 60 seconds.
+    pub async fn prune_stale_clients(&self) {
+        let mut clients = self.0.clients.lock().await;
+        let cutoff = chrono::Utc::now() - chrono::Duration::seconds(60);
+        let stale: Vec<String> = clients
+            .iter()
+            .filter(|(_, c)| c.last_poll < cutoff)
+            .map(|(k, _)| k.clone())
+            .collect();
+        for key in &stale {
+            tracing::info!(client_id = %key, "Removing stale client (no poll in 60s)");
+            clients.remove(key);
+        }
+    }
+
     pub async fn has_connected_client(&self) -> bool {
+        self.prune_stale_clients().await;
         !self.0.clients.lock().await.is_empty()
     }
 
     pub async fn connected_client_count(&self) -> usize {
+        self.prune_stale_clients().await;
         self.0.clients.lock().await.len()
     }
 
     pub async fn first_client_id(&self) -> Option<String> {
         self.0.clients.lock().await.keys().next().cloned()
+    }
+
+    /// Get info about all connected clients for status reporting.
+    pub async fn client_info(&self) -> Vec<(String, String, chrono::DateTime<chrono::Utc>, bool)> {
+        self.0
+            .clients
+            .lock()
+            .await
+            .iter()
+            .map(|(k, c)| (k.clone(), c.plugin_version.clone(), c.last_poll, c.is_playtest_bridge()))
+            .collect()
     }
 
     // ─── Tool Request Queuing ─────────────────────────────────
@@ -112,9 +140,6 @@ impl SharedState {
                 | "studio-npc_driver_command"
                 | "studio-npc_driver_stop"
                 | "studio-playtest_stop"
-                | "studio-logs_subscribe"
-                | "studio-logs_unsubscribe"
-                | "studio-logs_get"
         );
 
         // Find the target client key
@@ -137,13 +162,23 @@ impl SharedState {
             })
         };
 
+        let total_clients = clients.len();
         if let Some(key) = target_key {
             if let Some(client) = clients.get_mut(&key) {
+                tracing::info!(
+                    tool = %request.tool_name,
+                    client_id = %key,
+                    is_bridge = client.is_playtest_bridge(),
+                    prefers_bridge = prefers_bridge,
+                    total_clients = total_clients,
+                    "Routing tool request"
+                );
                 client.outbound_queue.push_back(request);
                 client.notify.notify_one();
                 return true;
             }
         }
+        tracing::warn!("No client found for tool request");
         false
     }
 
@@ -152,7 +187,17 @@ impl SharedState {
         let mut clients = self.0.clients.lock().await;
         if let Some(client) = clients.get_mut(client_id) {
             client.last_poll = chrono::Utc::now();
-            client.outbound_queue.drain(..).collect()
+            let requests: Vec<BridgeToolRequest> = client.outbound_queue.drain(..).collect();
+            if !requests.is_empty() {
+                let names: Vec<&str> = requests.iter().map(|r| r.tool_name.as_str()).collect();
+                tracing::info!(
+                    client_id = %client_id,
+                    is_bridge = client.is_playtest_bridge(),
+                    tools = ?names,
+                    "Client drained requests"
+                );
+            }
+            requests
         } else {
             vec![]
         }
