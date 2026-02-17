@@ -248,6 +248,7 @@ local function handleTool(toolName, args)
 
 		local keyCode = args.keyCode
 		local action = args.action or "type"
+		local duration = args.duration
 		if not keyCode then
 			return false, "Missing required argument: keyCode"
 		end
@@ -263,7 +264,7 @@ local function handleTool(toolName, args)
 				humanoid.WalkSpeed = 16
 			else
 				humanoid.WalkSpeed = 32
-				task.wait(0.15)
+				task.wait(duration or 0.5)
 				humanoid.WalkSpeed = 16
 			end
 			return true, { key = keyCode, action = action, walkSpeed = humanoid.WalkSpeed }
@@ -276,14 +277,14 @@ local function handleTool(toolName, args)
 				virtualKeys[keyCode] = nil
 			else
 				virtualKeys[keyCode] = true
-				task.wait(0.15)
+				task.wait(duration or 1)
 				virtualKeys[keyCode] = nil
 			end
 			local held = {}
 			for k, v in pairs(virtualKeys) do
 				if v then table.insert(held, k) end
 			end
-			return true, { key = keyCode, action = action, heldKeys = held }
+			return true, { key = keyCode, action = action, duration = duration or 1, heldKeys = held }
 
 		else
 			return false, "Unsupported keyCode: " .. tostring(keyCode) .. ". Supported: W, A, S, D, Space, LeftShift, RightShift"

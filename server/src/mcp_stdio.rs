@@ -442,7 +442,7 @@ fn tool_definitions() -> Vec<McpToolDef> {
         },
         McpToolDef {
             name: "studio-virtualuser_key".into(),
-            description: Some("Simulate keyboard input to control the player character during a Play mode playtest (F5). Supports WASD movement (hold with down/up for sustained movement), Space for jump, LeftShift/RightShift for sprint. Only works during Play mode with a spawned character.".into()),
+            description: Some("Simulate keyboard input to control the player character during a Play mode playtest (F5). Supports WASD movement, Space for jump, LeftShift/RightShift for sprint. Use 'type' action with 'duration' for smooth sustained movement (e.g. hold W for 3 seconds). Only works during Play mode with a spawned character.".into()),
             input_schema: json!({
                 "type": "object",
                 "properties": {
@@ -454,7 +454,11 @@ fn tool_definitions() -> Vec<McpToolDef> {
                     "action": {
                         "type": "string",
                         "enum": ["down", "up", "type"],
-                        "description": "'type' = press+release (tap), 'down' = hold key, 'up' = release key. Use down/up for sustained movement."
+                        "description": "'type' = hold key for duration then release (default 1s), 'down' = hold indefinitely, 'up' = release"
+                    },
+                    "duration": {
+                        "type": "number",
+                        "description": "Seconds to hold the key when action is 'type'. Default: 1 for movement keys, 0.5 for shift. Ignored for down/up."
                     }
                 },
                 "required": ["keyCode", "action"]
