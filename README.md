@@ -25,36 +25,51 @@ Claude Code (AI client)
 
 ## Prerequisites
 
-- **Rust toolchain** — Install via [rustup](https://rustup.rs/): `curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh`
 - **Roblox Studio** — Installed and able to open places
 
 ## Quick Start
 
-### 1. Build the Rust Server
+### 1. Download the Server Binary + Plugin
+
+Download the latest release from **[GitHub Releases](https://github.com/yippieeeeeeeeiokayay/yippieblox-mcp-server/releases)**:
+
+| Platform | File |
+|---|---|
+| macOS (Apple Silicon) | `yippieblox-mcp-server-macos-arm64.tar.gz` |
+| macOS (Intel) | `yippieblox-mcp-server-macos-x64.tar.gz` |
+| Linux (x64) | `yippieblox-mcp-server-linux-x64.tar.gz` |
+| Windows (x64) | `yippieblox-mcp-server-windows-x64.zip` |
+| Studio Plugin | `YippieBlox.rbxmx` |
+
+Extract the server binary and place it somewhere on your PATH or note its location for the MCP config.
+
+<details>
+<summary>Build from source instead</summary>
+
+Requires the [Rust toolchain](https://rustup.rs/).
 
 ```bash
-cd server
-cargo build --release
-```
+# Build the server
+cd server && cargo build --release
+# Binary is at server/target/release/roblox-studio-yippieblox-mcp-server
 
-The binary is at `server/target/release/roblox-studio-yippieblox-mcp-server`.
-
-### 2. Build & Install the Studio Plugin
-
-Build the `.rbxmx` plugin file from source, then copy it to your Studio Plugins directory:
-
-```bash
+# Build the plugin
 cd plugin && ./build_plugin.sh
 ```
+</details>
+
+### 2. Install the Studio Plugin
+
+Copy `YippieBlox.rbxmx` to your Studio Plugins directory:
 
 **macOS:**
 ```bash
-cp plugin/YippieBlox.rbxmx ~/Documents/Roblox/Plugins/YippieBlox.rbxmx
+cp YippieBlox.rbxmx ~/Documents/Roblox/Plugins/YippieBlox.rbxmx
 ```
 
 **Windows (PowerShell):**
 ```powershell
-Copy-Item plugin\YippieBlox.rbxmx "$env:LOCALAPPDATA\Roblox\Plugins\YippieBlox.rbxmx"
+Copy-Item YippieBlox.rbxmx "$env:LOCALAPPDATA\Roblox\Plugins\YippieBlox.rbxmx"
 ```
 
 ### 3. Enable HTTP Requests in Studio
