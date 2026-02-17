@@ -18,12 +18,17 @@ struct Inner {
 }
 
 struct ClientState {
-    #[allow(dead_code)]
     plugin_version: String,
     outbound_queue: VecDeque<BridgeToolRequest>,
     notify: Arc<Notify>,
-    #[allow(dead_code)]
     last_poll: chrono::DateTime<chrono::Utc>,
+}
+
+impl ClientState {
+    /// Returns true if this client is the playtest bridge (not the main plugin).
+    fn is_playtest_bridge(&self) -> bool {
+        self.plugin_version.contains("playtest")
+    }
 }
 
 #[derive(Default)]
@@ -84,19 +89,62 @@ impl SharedState {
 
     // ─── Tool Request Queuing ─────────────────────────────────
 
-    /// Enqueue a tool request for the most recently active client (by last poll time).
-    /// This ensures requests go to the playtest bridge during playtest (it polls actively)
-    /// rather than the paused plugin client.
-    /// Returns false if no client is connected.
+    /// Enqueue a tool request to the appropriate client based on tool name.
+    ///
+    /// During playtest, two clients are registered: the main plugin and the playtest bridge.
+    /// Tools that run during playtest (virtualuser, npc_driver, playtest_stop, logs) go to the
+    /// bridge. Tools that must run in the plugin context (test_script, run_script, checkpoint,
+    /// playtest_play/run) go to the main plugin client.
+    ///
+    /// Falls back to most recently polled client if the preferred target isn't available.
     pub async fn enqueue_tool_request(&self, request: BridgeToolRequest) -> bool {
         let mut clients = self.0.clients.lock().await;
-        if let Some(client) = clients.values_mut().max_by_key(|c| c.last_poll) {
-            client.outbound_queue.push_back(request);
-            client.notify.notify_one();
-            true
-        } else {
-            false
+        if clients.is_empty() {
+            return false;
         }
+
+        let prefers_bridge = matches!(
+            request.tool_name.as_str(),
+            "studio-virtualuser_key"
+                | "studio-virtualuser_mouse_button"
+                | "studio-virtualuser_move_mouse"
+                | "studio-npc_driver_start"
+                | "studio-npc_driver_command"
+                | "studio-npc_driver_stop"
+                | "studio-playtest_stop"
+                | "studio-logs_subscribe"
+                | "studio-logs_unsubscribe"
+                | "studio-logs_get"
+        );
+
+        // Find the target client key
+        let target_key = {
+            // First try to find the preferred client type
+            let preferred = clients.iter().find_map(|(k, c)| {
+                if prefers_bridge == c.is_playtest_bridge() {
+                    Some(k.clone())
+                } else {
+                    None
+                }
+            });
+
+            // Fall back to most recently polled client
+            preferred.or_else(|| {
+                clients
+                    .iter()
+                    .max_by_key(|(_, c)| c.last_poll)
+                    .map(|(k, _)| k.clone())
+            })
+        };
+
+        if let Some(key) = target_key {
+            if let Some(client) = clients.get_mut(&key) {
+                client.outbound_queue.push_back(request);
+                client.notify.notify_one();
+                return true;
+            }
+        }
+        false
     }
 
     /// Drain all pending outbound requests for a client.

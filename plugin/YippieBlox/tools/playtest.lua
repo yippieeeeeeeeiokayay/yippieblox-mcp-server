@@ -356,6 +356,14 @@ function Playtest.testScript(args, ctx)
 	removeTestRunner()
 	currentSession = nil
 
+	-- Wait for playtest to fully stop before returning,
+	-- otherwise the next test_script call may fail because
+	-- Roblox hasn't finished transitioning back to edit mode.
+	local waitStart = os.clock()
+	while RunService:IsRunning() and (os.clock() - waitStart) < 5 do
+		task.wait(0.2)
+	end
+
 	if not testResult then
 		testResult = {
 			success = false,
