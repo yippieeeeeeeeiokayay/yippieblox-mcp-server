@@ -164,21 +164,20 @@ Restart Claude Desktop after saving. The `studio-*` tools will appear in the too
 | `studio-logs_subscribe` | Subscribe to log output |
 | `studio-logs_unsubscribe` | Unsubscribe from logs |
 | `studio-logs_get` | Fetch buffered log entries |
-| `studio-capture_screenshot` | Capture viewport screenshot |
+| `studio-virtualuser_key` | Control player character movement during Play mode (WASD, Space, Shift) |
+| `studio-virtualuser_mouse_button` | Raycast from character to detect/interact with world objects during Play mode |
+| `studio-virtualuser_move_mouse` | Set player character facing direction during Play mode |
 
 ### Disabled Tools (Roblox API restrictions)
 
-These tools are registered but **will not work** due to Roblox security restrictions that prevent plugin access:
+These tools are registered but **will not work** due to Roblox security restrictions or missing APIs:
 
 | Tool | Reason |
 |---|---|
-| `studio-virtualuser_attach` | VirtualInputManager is RobloxScriptSecurity (internal only); VirtualUser is LocalUserSecurity (command bar only) |
-| `studio-virtualuser_key` | Same as above |
-| `studio-virtualuser_mouse_button` | Same as above |
-| `studio-virtualuser_move_mouse` | Same as above |
-| `studio-npc_driver_start` | Depends on VirtualUser for input; ClickDetector:_fireClick() is undocumented internal API |
-| `studio-npc_driver_command` | Same as above |
-| `studio-npc_driver_stop` | Same as above |
+| `studio-npc_driver_start` | Not yet implemented |
+| `studio-npc_driver_command` | Not yet implemented |
+| `studio-npc_driver_stop` | Not yet implemented |
+| `studio-capture_screenshot` | CaptureService returns rbxtemp:// content IDs that cannot be extracted as files |
 | `studio-capture_video_start` | CaptureService does not expose video recording API |
 | `studio-capture_video_stop` | Same as above |
 

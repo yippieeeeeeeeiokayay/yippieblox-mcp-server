@@ -141,6 +141,24 @@ async fn handle_tools_call(state: &SharedState, id: Value, params: Value) -> Jso
         return handle_status_tool(state, id).await;
     }
 
+    // Disabled tools — return unsupported immediately
+    let disabled_reason = match tool_name.as_str() {
+        "studio-npc_driver_start" | "studio-npc_driver_command" | "studio-npc_driver_stop" => {
+            Some("Unsupported: NPC driver is not yet implemented.")
+        }
+        "studio-capture_screenshot" => {
+            Some("Unsupported: CaptureService returns rbxtemp:// content IDs that cannot be extracted as files from a plugin.")
+        }
+        "studio-capture_video_start" | "studio-capture_video_stop" => {
+            Some("Unsupported: CaptureService does not expose a video recording API.")
+        }
+        _ => None,
+    };
+    if let Some(reason) = disabled_reason {
+        let result = McpToolResult::error_text(reason);
+        return JsonRpcResponse::success(id, result.to_value());
+    }
+
     // All other tools require a connected plugin
     if !state.has_connected_client().await {
         let result = McpToolResult::error_text(
@@ -426,33 +444,20 @@ fn tool_definitions() -> Vec<McpToolDef> {
             }),
         },
         McpToolDef {
-            name: "studio-virtualuser_attach".into(),
-            description: Some("Attach VirtualUser controller for input simulation during playtests".into()),
-            input_schema: json!({
-                "type": "object",
-                "properties": {
-                    "target": {
-                        "type": "string",
-                        "enum": ["playtest", "edit"],
-                        "description": "Target context (default: playtest)"
-                    }
-                }
-            }),
-        },
-        McpToolDef {
             name: "studio-virtualuser_key".into(),
-            description: Some("Simulate keyboard input via VirtualUser".into()),
+            description: Some("Simulate keyboard input to control the player character during a Play mode playtest (F5). Supports WASD movement (hold with down/up for sustained movement), Space for jump, LeftShift/RightShift for sprint. Only works during Play mode with a spawned character.".into()),
             input_schema: json!({
                 "type": "object",
                 "properties": {
                     "keyCode": {
                         "type": "string",
-                        "description": "Roblox KeyCode name (e.g. 'W', 'Space', 'Return', 'LeftShift')"
+                        "enum": ["W", "A", "S", "D", "Space", "LeftShift", "RightShift"],
+                        "description": "Key to simulate: W/A/S/D for movement, Space for jump, LeftShift/RightShift for sprint"
                     },
                     "action": {
                         "type": "string",
                         "enum": ["down", "up", "type"],
-                        "description": "'type' = press+release, 'down' = hold, 'up' = release"
+                        "description": "'type' = press+release (tap), 'down' = hold key, 'up' = release key. Use down/up for sustained movement."
                     }
                 },
                 "required": ["keyCode", "action"]
@@ -460,7 +465,7 @@ fn tool_definitions() -> Vec<McpToolDef> {
         },
         McpToolDef {
             name: "studio-virtualuser_mouse_button".into(),
-            description: Some("Simulate mouse button input via VirtualUser".into()),
+            description: Some("Raycast from the player character toward a world position or named instance during a Play mode playtest (F5). Reports what was hit (instance name, class, position, distance, material) and detects interactive elements (ClickDetectors, ProximityPrompts). Provide worldPosition {x,y,z} and/or target instance path. Only works during Play mode with a spawned character.".into()),
             input_schema: json!({
                 "type": "object",
                 "properties": {
@@ -471,17 +476,22 @@ fn tool_definitions() -> Vec<McpToolDef> {
                     },
                     "action": {
                         "type": "string",
-                        "enum": ["down", "up", "click"],
-                        "description": "'click' = press+release"
+                        "enum": ["click"],
+                        "description": "Action type"
                     },
-                    "position": {
+                    "worldPosition": {
                         "type": "object",
                         "properties": {
                             "x": { "type": "number" },
-                            "y": { "type": "number" }
+                            "y": { "type": "number" },
+                            "z": { "type": "number" }
                         },
-                        "required": ["x", "y"],
-                        "description": "Screen-space pixel coordinates"
+                        "required": ["x", "y", "z"],
+                        "description": "World-space position to raycast toward from the character's head"
+                    },
+                    "target": {
+                        "type": "string",
+                        "description": "Instance path (e.g. 'Workspace.MyPart') to target. If it's a BasePart and no worldPosition given, its position is used."
                     }
                 },
                 "required": ["button", "action"]
@@ -489,20 +499,22 @@ fn tool_definitions() -> Vec<McpToolDef> {
         },
         McpToolDef {
             name: "studio-virtualuser_move_mouse".into(),
-            description: Some("Move the virtual mouse cursor to screen coordinates".into()),
+            description: Some("Set the player character's facing direction during a Play mode playtest (F5). Rotates the HumanoidRootPart to face toward the given world position (horizontal rotation only). Only works during Play mode with a spawned character.".into()),
             input_schema: json!({
                 "type": "object",
                 "properties": {
-                    "position": {
+                    "lookAt": {
                         "type": "object",
                         "properties": {
                             "x": { "type": "number" },
-                            "y": { "type": "number" }
+                            "y": { "type": "number" },
+                            "z": { "type": "number" }
                         },
-                        "required": ["x", "y"]
+                        "required": ["x", "y", "z"],
+                        "description": "World-space position to face toward"
                     }
                 },
-                "required": ["position"]
+                "required": ["lookAt"]
             }),
         },
         McpToolDef {

@@ -86,7 +86,7 @@ Add to your `.mcp.json` (project) or `~/.claude.json` (global):
 
 All tools are namespaced under `studio-*`:
 
-### Working Tools
+### Working Tools (all verified)
 
 | Tool | Purpose |
 |------|---------|
@@ -102,16 +102,18 @@ All tools are namespaced under `studio-*`:
 | `studio-logs_subscribe` | Subscribe to LogService output |
 | `studio-logs_unsubscribe` | Unsubscribe from logs |
 | `studio-logs_get` | Fetch log entries |
-| `studio-capture_screenshot` | Take screenshot via CaptureService |
+| `studio-virtualuser_key` | Control player character (WASD, Space, Shift) during Play mode playtest |
+| `studio-virtualuser_mouse_button` | Raycast from character to detect/interact with world objects during Play mode |
+| `studio-virtualuser_move_mouse` | Set player character facing direction during Play mode |
 
 ### Disabled Tools (Roblox API restrictions)
 
-These tools are registered but **non-functional** due to Roblox engine security levels:
+These tools are registered but **non-functional** due to Roblox engine security levels or missing APIs:
 
 | Tool | Reason |
 |------|--------|
-| `studio-virtualuser_*` (4 tools) | VirtualInputManager = RobloxScriptSecurity (internal only); VirtualUser = LocalUserSecurity (command bar only). Neither accessible from plugins. |
-| `studio-npc_driver_*` (3 tools) | Depends on VirtualUser; also uses undocumented `ClickDetector:_fireClick()`. |
+| `studio-npc_driver_*` (3 tools) | Not yet implemented. |
+| `studio-capture_screenshot` | CaptureService returns rbxtemp:// content IDs that cannot be extracted as files. |
 | `studio-capture_video_start/stop` | CaptureService does not expose a video recording API. |
 
 ## Capture Folder

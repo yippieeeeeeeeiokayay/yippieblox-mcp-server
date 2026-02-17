@@ -7,6 +7,7 @@ return [==[
 local HttpService = game:GetService("HttpService")
 local RunService = game:GetService("RunService")
 local LogService = game:GetService("LogService")
+local Players = game:GetService("Players")
 
 -- Only run during playtest (server context)
 if not RunService:IsRunning() then
@@ -86,6 +87,52 @@ local MESSAGE_TYPE_MAP = {
 	[Enum.MessageType.MessageError] = "error",
 }
 
+-- ─── Virtual Input State ──────────────────────────────────────
+
+local MOVEMENT_KEYS = { W = true, A = true, S = true, D = true }
+local virtualKeys = {}
+local heartbeatConn = nil
+
+local function getPlayerCharacterHumanoid()
+	local players = Players:GetPlayers()
+	if #players == 0 then return nil, nil, nil end
+	local player = players[1]
+	local character = player.Character
+	if not character then return player, nil, nil end
+	local humanoid = character:FindFirstChildOfClass("Humanoid")
+	return player, character, humanoid
+end
+
+local function updateMovement()
+	local _, _, humanoid = getPlayerCharacterHumanoid()
+	if not humanoid or humanoid:GetState() == Enum.HumanoidStateType.Dead then return end
+
+	local moveDir = Vector3.zero
+	if virtualKeys["W"] then moveDir = moveDir + Vector3.new(0, 0, -1) end
+	if virtualKeys["S"] then moveDir = moveDir + Vector3.new(0, 0, 1) end
+	if virtualKeys["A"] then moveDir = moveDir + Vector3.new(-1, 0, 0) end
+	if virtualKeys["D"] then moveDir = moveDir + Vector3.new(1, 0, 0) end
+
+	if moveDir.Magnitude > 0 then
+		moveDir = moveDir.Unit
+	end
+
+	humanoid:Move(moveDir, false)
+end
+
+local function ensureHeartbeat()
+	if heartbeatConn then return end
+	heartbeatConn = RunService.Heartbeat:Connect(updateMovement)
+end
+
+local function cleanupVirtualInput()
+	if heartbeatConn then
+		heartbeatConn:Disconnect()
+		heartbeatConn = nil
+	end
+	virtualKeys = {}
+end
+
 local function handleTool(toolName, args)
 	if toolName == "studio-run_script" then
 		return false, "studio-run_script is not available during playtest (loadstring is restricted). Use studio-test_script instead, which bakes code directly into a Script."
@@ -163,6 +210,7 @@ local function handleTool(toolName, args)
 		return true, { entries = entries, nextSeq = logSeq, subscribed = (logConnection ~= nil) }
 
 	elseif toolName == "studio-playtest_stop" then
+		cleanupVirtualInput()
 		local ok, err = pcall(function()
 			game:GetService("StudioTestService"):EndTest(nil)
 		end)
@@ -171,8 +219,179 @@ local function handleTool(toolName, args)
 		end
 		return true, { ok = true }
 
+	elseif toolName == "studio-virtualuser_key" then
+		local player, character, humanoid = getPlayerCharacterHumanoid()
+		if not humanoid then
+			return false, "No player character found. Requires Play mode playtest (F5) with a spawned character."
+		end
+
+		local keyCode = args.keyCode
+		local action = args.action or "type"
+		if not keyCode then
+			return false, "Missing required argument: keyCode"
+		end
+
+		if keyCode == "Space" then
+			humanoid.Jump = true
+			return true, { key = "Space", action = "jump", state = humanoid:GetState().Name }
+
+		elseif keyCode == "LeftShift" or keyCode == "RightShift" then
+			if action == "down" then
+				humanoid.WalkSpeed = 32
+			elseif action == "up" then
+				humanoid.WalkSpeed = 16
+			else
+				humanoid.WalkSpeed = 32
+				task.wait(0.15)
+				humanoid.WalkSpeed = 16
+			end
+			return true, { key = keyCode, action = action, walkSpeed = humanoid.WalkSpeed }
+
+		elseif MOVEMENT_KEYS[keyCode] then
+			ensureHeartbeat()
+			if action == "down" then
+				virtualKeys[keyCode] = true
+			elseif action == "up" then
+				virtualKeys[keyCode] = nil
+			else
+				virtualKeys[keyCode] = true
+				task.wait(0.15)
+				virtualKeys[keyCode] = nil
+			end
+			local held = {}
+			for k, v in pairs(virtualKeys) do
+				if v then table.insert(held, k) end
+			end
+			return true, { key = keyCode, action = action, heldKeys = held }
+
+		else
+			return false, "Unsupported keyCode: " .. tostring(keyCode) .. ". Supported: W, A, S, D, Space, LeftShift, RightShift"
+		end
+
+	elseif toolName == "studio-virtualuser_mouse_button" then
+		local player, character, humanoid = getPlayerCharacterHumanoid()
+		if not humanoid then
+			return false, "No player character found. Requires Play mode playtest (F5) with a spawned character."
+		end
+
+		local button = args.button or 1
+		local worldPos = args.worldPosition
+		local targetPath = args.target
+		if not worldPos and not targetPath then
+			return false, "Provide 'worldPosition' ({x,y,z}) or 'target' (instance path like 'Workspace.MyPart')"
+		end
+
+		local head = character:FindFirstChild("Head")
+		if not head then
+			return false, "Character has no Head part"
+		end
+
+		-- Resolve target instance by path
+		local targetInstance = nil
+		if targetPath then
+			local pathParts = string.split(targetPath, ".")
+			local current = game
+			for _, part in ipairs(pathParts) do
+				current = current:FindFirstChild(part)
+				if not current then
+					return false, "Instance not found at path: " .. targetPath
+				end
+			end
+			targetInstance = current
+			if not worldPos and targetInstance:IsA("BasePart") then
+				worldPos = { x = targetInstance.Position.X, y = targetInstance.Position.Y, z = targetInstance.Position.Z }
+			end
+		end
+
+		local response = { button = button, action = args.action or "click" }
+
+		if worldPos then
+			local origin = head.Position
+			local target = Vector3.new(worldPos.x, worldPos.y, worldPos.z)
+			local direction = (target - origin)
+			if direction.Magnitude > 1000 then
+				direction = direction.Unit * 1000
+			end
+
+			local params = RaycastParams.new()
+			params.FilterDescendantsInstances = {character}
+			params.FilterType = Enum.RaycastFilterType.Exclude
+
+			local result = workspace:Raycast(origin, direction, params)
+			if result then
+				local hit = result.Instance
+				response.hit = {
+					name = hit.Name,
+					fullName = hit:GetFullName(),
+					className = hit.ClassName,
+					position = { x = result.Position.X, y = result.Position.Y, z = result.Position.Z },
+					distance = result.Distance,
+					material = result.Material.Name,
+				}
+
+				local clickDetector = hit:FindFirstChildOfClass("ClickDetector")
+				if not clickDetector and hit.Parent then
+					clickDetector = hit.Parent:FindFirstChildOfClass("ClickDetector")
+				end
+				if clickDetector then
+					response.hit.hasClickDetector = true
+					response.hit.clickNote = "ClickDetector found but cannot be triggered from server context."
+				end
+
+				local prompt = hit:FindFirstChildOfClass("ProximityPrompt")
+				if not prompt and hit.Parent then
+					prompt = hit.Parent:FindFirstChildOfClass("ProximityPrompt")
+				end
+				if prompt then
+					response.hit.hasProximityPrompt = true
+					response.hit.promptText = prompt.ActionText
+				end
+			else
+				response.miss = true
+				response.note = "Raycast did not hit anything"
+			end
+		elseif targetInstance then
+			response.targetFound = true
+			response.targetFullName = targetInstance:GetFullName()
+			response.targetClassName = targetInstance.ClassName
+		end
+
+		return true, response
+
+	elseif toolName == "studio-virtualuser_move_mouse" then
+		local player, character, humanoid = getPlayerCharacterHumanoid()
+		if not humanoid then
+			return false, "No player character found. Requires Play mode playtest (F5) with a spawned character."
+		end
+
+		local lookAt = args.lookAt
+		if not lookAt then
+			return false, "Missing required argument: lookAt ({x, y, z} world position to face toward)"
+		end
+
+		local rootPart = character:FindFirstChild("HumanoidRootPart")
+		if not rootPart then
+			return false, "Character has no HumanoidRootPart"
+		end
+
+		local targetPos = Vector3.new(lookAt.x, rootPart.Position.Y, lookAt.z)
+		rootPart.CFrame = CFrame.lookAt(rootPart.Position, targetPos)
+
+		return true, {
+			lookVector = {
+				x = rootPart.CFrame.LookVector.X,
+				y = rootPart.CFrame.LookVector.Y,
+				z = rootPart.CFrame.LookVector.Z,
+			},
+			position = {
+				x = rootPart.Position.X,
+				y = rootPart.Position.Y,
+				z = rootPart.Position.Z,
+			},
+		}
+
 	else
-		return false, "Tool '" .. tostring(toolName) .. "' is not available during playtest. Available: studio-run_script, studio-status, studio-logs_subscribe, studio-logs_unsubscribe, studio-logs_get, studio-playtest_stop"
+		return false, "Tool '" .. tostring(toolName) .. "' is not available during playtest. Available: studio-status, studio-logs_*, studio-playtest_stop, studio-virtualuser_key, studio-virtualuser_mouse_button, studio-virtualuser_move_mouse"
 	end
 end
 
@@ -230,5 +449,6 @@ while RunService:IsRunning() do
 	end
 end
 
+cleanupVirtualInput()
 print("[MCP-Playtest] Playtest ended, bridge shutting down")
 ]==]
