@@ -271,7 +271,7 @@ fn tool_definitions() -> Vec<McpToolDef> {
     vec![
         McpToolDef {
             name: "studio-status".into(),
-            description: Some("Get Studio connection status and playtest state".into()),
+            description: Some("Get current Studio connection state and playtest status. Use this to verify the plugin is connected before executing other tools, or to check if a playtest is currently active. Returns connection status, playtest mode (none/play/run), and server URL.".into()),
             input_schema: json!({
                 "type": "object",
                 "properties": {},
@@ -280,13 +280,13 @@ fn tool_definitions() -> Vec<McpToolDef> {
         },
         McpToolDef {
             name: "studio-run_script".into(),
-            description: Some("Execute Luau code in Roblox Studio's edit mode (NOT during playtest). Use this for modifying the place, inspecting the data model, creating/editing instances, or any operation that doesn't need a running game. This does NOT work during playtest — use studio-test_script instead if you need to run code in a live game session with access to Players, physics, etc.".into()),
+            description: Some("Execute Luau code in Studio's edit mode to modify the place structure, inspect the DataModel, or create/modify instances. Only works when NO playtest is active - this is for editing the place file itself. Returns the script's return value and any print() output. Use studio-test_script instead if you need to test runtime behavior, game logic, or anything involving Players.".into()),
             input_schema: json!({
                 "type": "object",
                 "properties": {
                     "code": {
                         "type": "string",
-                        "description": "Luau source code to execute in Studio's plugin context"
+                        "description": "Luau code to execute in edit mode. Can include print() statements for debugging. Use 'return <value>' to return data. Multi-line scripts are supported. Example: 'local part = Instance.new(\"Part\", workspace); part.Size = Vector3.new(4,1,2); return part.Name'"
                     },
                     "mode": {
                         "type": "string",
@@ -295,11 +295,11 @@ fn tool_definitions() -> Vec<McpToolDef> {
                     },
                     "allowInPlay": {
                         "type": "boolean",
-                        "description": "Allow execution during a playtest session (default: false)"
+                        "description": "Allow execution during a playtest session (default: false). Usually you should use studio-test_script instead."
                     },
                     "captureLogsMs": {
                         "type": "number",
-                        "description": "Milliseconds to capture log output after execution (default: 0)"
+                        "description": "Milliseconds to capture log output after execution (default: 0). Set to e.g. 500 to capture async print() output."
                     }
                 },
                 "required": ["code"]
@@ -307,13 +307,13 @@ fn tool_definitions() -> Vec<McpToolDef> {
         },
         McpToolDef {
             name: "studio-checkpoint_begin".into(),
-            description: Some("Begin a ChangeHistoryService recording for undo/redo tracking".into()),
+            description: Some("Start a named ChangeHistoryService checkpoint to track modifications you're about to make. Always call this BEFORE making changes you might want to undo later. Returns a checkpointId that you MUST save and pass to studio-checkpoint_end to commit the changes. Typical workflow: checkpoint_begin → run_script (make changes) → checkpoint_end.".into()),
             input_schema: json!({
                 "type": "object",
                 "properties": {
                     "name": {
                         "type": "string",
-                        "description": "Human-readable name for this checkpoint"
+                        "description": "Descriptive name for this checkpoint. Will appear in Studio's undo history. Be specific about what changes you're making. Example: 'Create 10 test parts' or 'Modify lighting settings'"
                     }
                 },
                 "required": ["name"]
@@ -321,17 +321,17 @@ fn tool_definitions() -> Vec<McpToolDef> {
         },
         McpToolDef {
             name: "studio-checkpoint_end".into(),
-            description: Some("End and commit a ChangeHistoryService recording".into()),
+            description: Some("Commit and finalize a checkpoint started with studio-checkpoint_begin. This makes the recorded changes available for undo in Studio's history. You MUST provide the checkpointId returned from the begin call. Always call this after completing your modifications - uncommitted checkpoints cannot be undone.".into()),
             input_schema: json!({
                 "type": "object",
                 "properties": {
                     "checkpointId": {
                         "type": "string",
-                        "description": "Recording ID from checkpoint_begin"
+                        "description": "The unique checkpoint ID returned from studio-checkpoint_begin. Required to commit the correct checkpoint."
                     },
                     "commitMessage": {
                         "type": "string",
-                        "description": "Optional commit description"
+                        "description": "Optional commit description for the undo history"
                     }
                 },
                 "required": ["checkpointId"]
@@ -339,20 +339,20 @@ fn tool_definitions() -> Vec<McpToolDef> {
         },
         McpToolDef {
             name: "studio-checkpoint_undo".into(),
-            description: Some("Undo the last checkpoint or a specific checkpoint".into()),
+            description: Some("Undo the most recent committed checkpoint in Studio's ChangeHistory. Reverts all changes made in the last checkpoint operation. Works the same as Edit → Undo in Studio. Multiple calls will undo multiple checkpoints sequentially. Cannot undo past the current session start.".into()),
             input_schema: json!({
                 "type": "object",
                 "properties": {
                     "checkpointId": {
                         "type": "string",
-                        "description": "Optional: specific checkpoint to undo to"
+                        "description": "Optional: specific checkpoint to undo to. If omitted, undoes the most recent checkpoint."
                     }
                 }
             }),
         },
         McpToolDef {
             name: "studio-playtest_play".into(),
-            description: Some("Start a Play mode playtest in Roblox Studio (client+server, like pressing F5)".into()),
+            description: Some("Start a Play mode playtest session - simulates both client and server like pressing F5 in Studio. Use this when you need to test player-facing features: character movement, UI, camera controls, localscripts, or anything requiring a player character. The local player spawns and can be controlled with studio-virtualuser_* tools. Use studio-playtest_run instead for server-only testing without a player character, or studio-test_script for quick one-off tests.".into()),
             input_schema: json!({
                 "type": "object",
                 "properties": {}
@@ -360,7 +360,7 @@ fn tool_definitions() -> Vec<McpToolDef> {
         },
         McpToolDef {
             name: "studio-playtest_run".into(),
-            description: Some("Start a Run mode playtest in Roblox Studio (server only, like pressing F8)".into()),
+            description: Some("Start a Run mode playtest session - server-only simulation like pressing F8 in Studio. Use this for testing server scripts, game logic, and systems that don't require a player character. No local player spawns, making it faster than Play mode. Use studio-playtest_play if you need to test player interactions or client-side features, or studio-test_script for quick one-off tests.".into()),
             input_schema: json!({
                 "type": "object",
                 "properties": {}
@@ -368,35 +368,35 @@ fn tool_definitions() -> Vec<McpToolDef> {
         },
         McpToolDef {
             name: "studio-playtest_stop".into(),
-            description: Some("Stop the current playtest session".into()),
+            description: Some("Stop the currently active playtest and return Studio to edit mode. Works for both Play mode (F5) and Run mode (F8) playtests. Always call this when you're done testing to free up resources and allow edit-mode script execution again. Automatically called by studio-test_script, but required when manually starting playtests with studio-playtest_play or studio-playtest_run.".into()),
             input_schema: json!({
                 "type": "object",
                 "properties": {
                     "sessionId": {
                         "type": "string",
-                        "description": "Optional session ID to stop"
+                        "description": "Optional session ID to stop. If omitted, stops the current active playtest."
                     }
                 }
             }),
         },
         McpToolDef {
             name: "studio-test_script".into(),
-            description: Some("Run Luau code in a playtest session with full game context. Use this instead of studio-run_script when you need to test game logic, verify runtime behavior, or access services that only work during gameplay (Players, physics, Humanoids, etc). Automatically starts a playtest, injects the code as a server Script, captures all output logs and errors, stops the playtest, and returns results. Returns: success (bool), value (return value), error (if failed), logs (all output), errors (warnings/errors only), duration (seconds).".into()),
+            description: Some("Execute Luau code inside a live playtest environment to test game logic, physics, character movement, Players service, or any runtime behavior. Automatically starts a playtest, runs your code in the game server, captures all logs and errors, stops the playtest, and returns results. Use this instead of studio-run_script when testing gameplay features, server scripts, or anything requiring a running game. Cannot modify the place structure - use studio-run_script for that. Returns: success (bool), value (return value), error (if failed), logs (all captured output), errors (warnings/errors only), duration (seconds).".into()),
             input_schema: json!({
                 "type": "object",
                 "properties": {
                     "code": {
                         "type": "string",
-                        "description": "Luau code to execute as a test. The code runs in the server context during playtest. Use print() for output, error() or assert() for failures. The return value of the last expression is captured."
+                        "description": "Luau code to execute during playtest. Runs in server context. Can access running game services like Players, RunService, ReplicatedStorage. Use print() for debugging output. Example: 'local players = game.Players:GetPlayers(); print(#players .. \" players in game\"); return workspace.Gravity'"
                     },
                     "mode": {
                         "type": "string",
                         "enum": ["run", "play"],
-                        "description": "Playtest mode: 'run' (server only, faster) or 'play' (client+server). Default: 'run'"
+                        "description": "Playtest mode: 'run' (server only, faster, no player character) or 'play' (client+server, player spawns). Default: 'run'"
                     },
                     "timeout": {
                         "type": "number",
-                        "description": "Max seconds to wait for the test to complete before force-stopping. Default: 30"
+                        "description": "Max seconds to wait for the test to complete before force-stopping. Default: 30. Increase for long-running tests."
                     }
                 },
                 "required": ["code"]
@@ -404,29 +404,29 @@ fn tool_definitions() -> Vec<McpToolDef> {
         },
         McpToolDef {
             name: "studio-logs_subscribe".into(),
-            description: Some("Subscribe to Studio log output via LogService. Returns existing history.".into()),
+            description: Some("Subscribe to real-time Studio log output to capture print() statements, errors, and warnings from scripts. Must be called before studio-logs_get will return any data. Logs are buffered in memory until you unsubscribe. Use includeHistory: true to receive logs from before subscription. Essential for debugging script execution. Always unsubscribe when finished to prevent memory buildup.".into()),
             input_schema: json!({
                 "type": "object",
                 "properties": {
                     "channels": {
                         "type": "array",
                         "items": { "type": "string", "enum": ["output", "info", "warning", "error"] },
-                        "description": "Log levels to subscribe to (default: all)"
+                        "description": "Log levels to subscribe to (default: all). Filter to specific levels to reduce noise."
                     },
                     "includeHistory": {
                         "type": "boolean",
-                        "description": "Include existing log history (default: true)"
+                        "description": "Whether to include logs generated before subscribing (default: true). Set to true if you need to see output from scripts that ran earlier in the session."
                     },
                     "maxHistory": {
                         "type": "number",
-                        "description": "Max history entries to return (default: 200)"
+                        "description": "Max history entries to return (default: 200). Historical buffer is limited."
                     }
                 }
             }),
         },
         McpToolDef {
             name: "studio-logs_unsubscribe".into(),
-            description: Some("Unsubscribe from Studio log output".into()),
+            description: Some("Stop receiving log output and clear the log buffer. Call this when you're done monitoring logs to free up memory. After unsubscribing, studio-logs_get will fail until you subscribe again. Safe to call even if not subscribed.".into()),
             input_schema: json!({
                 "type": "object",
                 "properties": {},
@@ -435,13 +435,13 @@ fn tool_definitions() -> Vec<McpToolDef> {
         },
         McpToolDef {
             name: "studio-logs_get".into(),
-            description: Some("Fetch buffered log entries".into()),
+            description: Some("Fetch buffered log entries that have accumulated since subscribing with studio-logs_subscribe. Returns all captured print() output, errors, and warnings. Requires an active subscription - call studio-logs_subscribe first. Logs are cleared from the buffer after retrieval.".into()),
             input_schema: json!({
                 "type": "object",
                 "properties": {
                     "sinceSeq": {
                         "type": "number",
-                        "description": "Return logs after this sequence number"
+                        "description": "Return only logs after this sequence number. Use to paginate or avoid re-reading old entries."
                     },
                     "limit": {
                         "type": "number",
@@ -450,26 +450,26 @@ fn tool_definitions() -> Vec<McpToolDef> {
                     "levels": {
                         "type": "array",
                         "items": { "type": "string", "enum": ["output", "info", "warning", "error"] },
-                        "description": "Filter by log level"
+                        "description": "Filter by log level. Omit to get all levels."
                     }
                 }
             }),
         },
         McpToolDef {
             name: "studio-virtualuser_key".into(),
-            description: Some("Simulate holding/releasing keyboard keys to control the player character during a Play mode playtest (F5). Keys stay held until explicitly released with action 'up'. Use 'down' to start holding a key and 'up' to release it. For example: send W down to start walking, do other things, then send W up to stop. Space triggers a single jump. Only works during Play mode with a spawned character.".into()),
+            description: Some("Simulate keyboard input for the player character during Play mode playtest (F5). Control character movement (W/A/S/D), jumping (Space), and sprinting (LeftShift/RightShift). Keys stay held until explicitly released with action 'up'. Use 'down' to start holding a key, do other things, then 'up' to release. Space triggers a single jump. Only works during Play mode with a spawned character. Requires studio-playtest_play to be called first.".into()),
             input_schema: json!({
                 "type": "object",
                 "properties": {
                     "keyCode": {
                         "type": "string",
                         "enum": ["W", "A", "S", "D", "Space", "LeftShift", "RightShift"],
-                        "description": "Key to simulate: W/A/S/D for movement, Space for jump, LeftShift/RightShift for sprint"
+                        "description": "Keyboard key to simulate. W=forward, A=left, S=backward, D=right, Space=jump, LeftShift/RightShift=sprint."
                     },
                     "action": {
                         "type": "string",
                         "enum": ["down", "up"],
-                        "description": "'down' = start holding key (default), 'up' = release key. Keys stay held until released."
+                        "description": "'down' = start holding key (default), 'up' = release key. Keys stay held until released. For jumping, just send 'down' once."
                     }
                 },
                 "required": ["keyCode"]
@@ -477,19 +477,19 @@ fn tool_definitions() -> Vec<McpToolDef> {
         },
         McpToolDef {
             name: "studio-virtualuser_mouse_button".into(),
-            description: Some("Raycast from the player character toward a world position or named instance during a Play mode playtest (F5). Reports what was hit (instance name, class, position, distance, material) and detects interactive elements (ClickDetectors, ProximityPrompts). Provide worldPosition {x,y,z} and/or target instance path. Only works during Play mode with a spawned character.".into()),
+            description: Some("Simulate mouse click at the player's position during Play mode. Performs a raycast from the character's head toward a world position or named instance to detect and interact with world objects. Reports what was hit (instance name, class, position, distance, material) and detects interactive elements (ClickDetectors, ProximityPrompts). Only works during Play mode (F5) with a spawned character.".into()),
             input_schema: json!({
                 "type": "object",
                 "properties": {
                     "button": {
                         "type": "integer",
                         "enum": [1, 2],
-                        "description": "Mouse button: 1=left, 2=right"
+                        "description": "Mouse button number. 1=left click (primary), 2=right click (secondary). Most interactions use button 1."
                     },
                     "action": {
                         "type": "string",
                         "enum": ["click"],
-                        "description": "Action type"
+                        "description": "Action type. Currently only 'click' is supported."
                     },
                     "worldPosition": {
                         "type": "object",
@@ -499,11 +499,11 @@ fn tool_definitions() -> Vec<McpToolDef> {
                             "z": { "type": "number" }
                         },
                         "required": ["x", "y", "z"],
-                        "description": "World-space position to raycast toward from the character's head"
+                        "description": "World-space position to raycast toward from the character's head. Provide this OR target."
                     },
                     "target": {
                         "type": "string",
-                        "description": "Instance path (e.g. 'Workspace.MyPart') to target. If it's a BasePart and no worldPosition given, its position is used."
+                        "description": "Instance path to target (e.g. 'Workspace.MyPart'). If it's a BasePart and no worldPosition given, its position is used. Provide this OR worldPosition."
                     }
                 },
                 "required": ["button", "action"]
@@ -511,7 +511,7 @@ fn tool_definitions() -> Vec<McpToolDef> {
         },
         McpToolDef {
             name: "studio-virtualuser_move_mouse".into(),
-            description: Some("Set the player character's facing direction during a Play mode playtest (F5). Rotates the HumanoidRootPart to face toward the given world position (horizontal rotation only). Only works during Play mode with a spawned character.".into()),
+            description: Some("Set the player character's facing direction during Play mode by rotating the HumanoidRootPart to face toward a world position (horizontal rotation only). Use for controlling where the character looks, affecting camera angle and character rotation. Only works during Play mode (F5) with a spawned character. Requires studio-playtest_play to be called first.".into()),
             input_schema: json!({
                 "type": "object",
                 "properties": {
@@ -523,7 +523,7 @@ fn tool_definitions() -> Vec<McpToolDef> {
                             "z": { "type": "number" }
                         },
                         "required": ["x", "y", "z"],
-                        "description": "World-space position to face toward"
+                        "description": "World-space position to face toward. The character rotates horizontally to look at this point."
                     }
                 },
                 "required": ["lookAt"]
@@ -531,13 +531,13 @@ fn tool_definitions() -> Vec<McpToolDef> {
         },
         McpToolDef {
             name: "studio-npc_driver_start".into(),
-            description: Some("Start controlling an NPC (any character model with a Humanoid) during a Play mode playtest (F5). Provide the instance path to the character model. Returns a driverId for subsequent commands. Multiple drivers can be active simultaneously.".into()),
+            description: Some("Start controlling any NPC character (any Model with a Humanoid) during Play mode playtest. Enables AI-style control for testing NPC movement, pathfinding, and behavior. Returns a driverId you MUST use for subsequent studio-npc_driver_command and studio-npc_driver_stop calls. Multiple NPCs can be controlled simultaneously. Stop control with studio-npc_driver_stop when finished.".into()),
             input_schema: json!({
                 "type": "object",
                 "properties": {
                     "target": {
                         "type": "string",
-                        "description": "Instance path to the character model (e.g. 'Workspace.NPCModel' or 'Workspace.Enemies.Zombie1')"
+                        "description": "Full instance path to the NPC character model. Must contain a Humanoid. Example: 'Workspace.NPCModel' or 'Workspace.Enemies.Zombie1'. Case-sensitive."
                     }
                 },
                 "required": ["target"]
@@ -545,22 +545,22 @@ fn tool_definitions() -> Vec<McpToolDef> {
         },
         McpToolDef {
             name: "studio-npc_driver_command".into(),
-            description: Some("Send a command to a controlled NPC during a Play mode playtest. Commands execute synchronously — move_to blocks until the NPC arrives or times out. Only works during Play mode with an active driver.".into()),
+            description: Some("Send movement and behavior commands to an NPC being controlled by studio-npc_driver_start. Available commands: 'move_to' (navigate to world position), 'jump', 'wait' (pause for duration), 'set_walkspeed' (change movement speed), and 'look_at' (face a position). Commands execute synchronously - move_to blocks until the NPC arrives or times out. Only works during Play mode with an active driver.".into()),
             input_schema: json!({
                 "type": "object",
                 "properties": {
                     "driverId": {
                         "type": "string",
-                        "description": "Driver ID from npc_driver_start"
+                        "description": "Driver ID returned from studio-npc_driver_start. Required to identify which NPC to command."
                     },
                     "command": {
                         "type": "object",
-                        "description": "Command to execute",
+                        "description": "Command to execute on the NPC.",
                         "properties": {
                             "type": {
                                 "type": "string",
                                 "enum": ["move_to", "jump", "wait", "set_walkspeed", "look_at"],
-                                "description": "Command type"
+                                "description": "Command type. 'move_to' navigates to position, 'jump' makes NPC jump, 'wait' pauses for ms duration, 'set_walkspeed' changes speed, 'look_at' rotates to face position."
                             },
                             "position": {
                                 "type": "object",
@@ -569,19 +569,19 @@ fn tool_definitions() -> Vec<McpToolDef> {
                                     "y": { "type": "number" },
                                     "z": { "type": "number" }
                                 },
-                                "description": "Target position for move_to and look_at"
+                                "description": "Target world position for 'move_to' and 'look_at'. Example: {x: 10, y: 0, z: 20}"
                             },
                             "ms": {
                                 "type": "number",
-                                "description": "Duration in milliseconds for wait command"
+                                "description": "Duration in milliseconds for 'wait' command. Example: 2000 for 2 seconds."
                             },
                             "value": {
                                 "type": "number",
-                                "description": "Value for set_walkspeed"
+                                "description": "Value for 'set_walkspeed'. Default Roblox character WalkSpeed is 16. Range: 0-100+."
                             },
                             "timeout": {
                                 "type": "number",
-                                "description": "Max seconds to wait for move_to completion (default: 15)"
+                                "description": "Max seconds to wait for 'move_to' to complete before giving up (default: 15)."
                             }
                         },
                         "required": ["type"]
@@ -592,13 +592,13 @@ fn tool_definitions() -> Vec<McpToolDef> {
         },
         McpToolDef {
             name: "studio-npc_driver_stop".into(),
-            description: Some("Stop controlling an NPC and release the driver. Only works during Play mode.".into()),
+            description: Some("Stop controlling an NPC that was started with studio-npc_driver_start. Releases control, stops all movement, and clears any queued commands. The NPC will return to idle. Always call this when finished controlling an NPC to free up resources. Safe to call even if the NPC isn't being controlled.".into()),
             input_schema: json!({
                 "type": "object",
                 "properties": {
                     "driverId": {
                         "type": "string",
-                        "description": "Driver ID to stop"
+                        "description": "Driver ID returned from studio-npc_driver_start. Identifies which NPC to stop controlling."
                     }
                 },
                 "required": ["driverId"]
@@ -606,7 +606,7 @@ fn tool_definitions() -> Vec<McpToolDef> {
         },
         McpToolDef {
             name: "studio-capture_screenshot".into(),
-            description: Some("Capture a screenshot of the Studio viewport. Saves to the capture folder on disk.".into()),
+            description: Some("DISABLED - DO NOT USE. Capture a screenshot of the Studio viewport. Non-functional due to Roblox API limitations - CaptureService returns inaccessible rbxtemp:// URIs that cannot be extracted as files. Will return an error if called.".into()),
             input_schema: json!({
                 "type": "object",
                 "properties": {
@@ -623,7 +623,7 @@ fn tool_definitions() -> Vec<McpToolDef> {
         },
         McpToolDef {
             name: "studio-capture_video_start".into(),
-            description: Some("Start recording video of the Studio viewport".into()),
+            description: Some("DISABLED - DO NOT USE. Start recording video of Studio viewport. Non-functional - Roblox's CaptureService does not expose video recording APIs to plugins. Will return an error if called.".into()),
             input_schema: json!({
                 "type": "object",
                 "properties": {
@@ -640,7 +640,7 @@ fn tool_definitions() -> Vec<McpToolDef> {
         },
         McpToolDef {
             name: "studio-capture_video_stop".into(),
-            description: Some("Stop video recording".into()),
+            description: Some("DISABLED - DO NOT USE. Stop video recording. Non-functional - Roblox's CaptureService does not expose video recording APIs to plugins. Will return an error if called.".into()),
             input_schema: json!({
                 "type": "object",
                 "properties": {

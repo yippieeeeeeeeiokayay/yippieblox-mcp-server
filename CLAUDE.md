@@ -52,6 +52,7 @@ Add to your `.mcp.json` (project) or `~/.claude.json` (global):
 ```
 /CLAUDE.md                       ← You are here
 /README.md                       ← End-to-end setup guide
+/improve_tool_descriptions.md    ← Source of truth for MCP tool descriptions
 /server/                         ← Rust MCP server + HTTP bridge
   Cargo.toml
   src/
@@ -81,6 +82,7 @@ Add to your `.mcp.json` (project) or `~/.claude.json` (global):
 - **Error handling**: All plugin tool handlers must be `pcall`-wrapped. Rust uses `anyhow` for internal errors, structured MCP errors for client-facing.
 - **Logging**: Rust uses `tracing` crate. Plugin prefixes internal messages with `[MCP]` (which are filtered from log capture to avoid loops).
 - **README.md must stay up to date**: When adding, removing, or renaming tools, changing build steps, updating config options, or modifying the smoke test — always update README.md to match. The tool table, smoke test section, and setup instructions must reflect the current state of the code.
+- **`improve_tool_descriptions.md` must stay up to date**: This file is the source of truth for MCP tool descriptions. When adding, removing, or changing tools, update this file first, then apply matching changes to the Rust tool definitions in `mcp_stdio.rs`. Tool descriptions, parameter descriptions, and usage examples must stay in sync across all three places (improve_tool_descriptions.md, mcp_stdio.rs, README.md).
 - **No Co-Authored-By in commits**: Do not add `Co-Authored-By` trailers to git commit messages.
 
 ## MCP Tool Schema Summary

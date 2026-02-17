@@ -163,38 +163,70 @@ Restart Claude Desktop after saving. The `studio-*` tools will appear in the too
 
 ## MCP Tools
 
-### Working Tools
+All tools are namespaced under `studio-*`. For full descriptions, parameter schemas, and usage examples, see [`improve_tool_descriptions.md`](improve_tool_descriptions.md).
+
+### Script Execution
+
+| Tool | When to Use |
+|---|---|
+| `studio-run_script` | Execute Luau in **edit mode only** to modify the place, inspect the DataModel, or create/modify instances. Does NOT work during playtest. |
+| `studio-test_script` | Execute Luau in a **live playtest** to test game logic, Players, physics, runtime behavior. Auto-starts playtest, captures logs/errors, stops playtest, returns results. |
+
+**Which one do I use?** Use `run_script` to change the place file (add parts, edit properties, inspect the tree). Use `test_script` to test how things behave at runtime (game logic, player interactions, physics).
+
+### Checkpoint Management (Undo/Redo)
 
 | Tool | Description |
 |---|---|
-| `studio-status` | Get connection status and playtest state |
-| `studio-run_script` | Execute Luau in edit mode only (NOT during playtest). For modifying the place, inspecting/creating instances. |
-| `studio-test_script` | Execute Luau in a playtest session — use instead of `run_script` when testing game logic, runtime behavior, Players, physics, etc. Auto-starts playtest, captures all logs/errors, stops playtest, returns results. |
-| `studio-checkpoint_begin` | Start ChangeHistoryService recording |
-| `studio-checkpoint_end` | Commit recording |
-| `studio-checkpoint_undo` | Undo last change |
-| `studio-playtest_play` | Start Play mode playtest (client+server, like F5) |
-| `studio-playtest_run` | Start Run mode playtest (server only, like F8) |
-| `studio-playtest_stop` | Stop playtest |
-| `studio-logs_subscribe` | Subscribe to log output |
-| `studio-logs_unsubscribe` | Unsubscribe from logs |
-| `studio-logs_get` | Fetch buffered log entries |
-| `studio-virtualuser_key` | Control player character movement during Play mode (WASD, Space, Shift) |
-| `studio-virtualuser_mouse_button` | Raycast from character to detect/interact with world objects during Play mode |
-| `studio-virtualuser_move_mouse` | Set player character facing direction during Play mode |
-| `studio-npc_driver_start` | Start controlling any NPC (character with Humanoid) during Play mode |
-| `studio-npc_driver_command` | Send commands to NPC: move_to, jump, wait, set_walkspeed, look_at |
-| `studio-npc_driver_stop` | Stop controlling an NPC |
+| `studio-checkpoint_begin` | Start tracking changes. Returns a `checkpointId` — save it. |
+| `studio-checkpoint_end` | Commit changes using the `checkpointId` from begin. |
+| `studio-checkpoint_undo` | Undo the most recent committed checkpoint. |
 
-### Disabled Tools (Roblox API restrictions)
+**Typical workflow:** `checkpoint_begin` → `run_script` (make changes) → `checkpoint_end` → `checkpoint_undo` (if needed).
 
-These tools are registered but **will not work** due to Roblox security restrictions or missing APIs:
+### Playtest Control
+
+| Tool | Description |
+|---|---|
+| `studio-playtest_play` | Start Play mode (F5) — client+server, player character spawns. Required for virtualuser/NPC tools. |
+| `studio-playtest_run` | Start Run mode (F8) — server only, no player. Faster for server-only testing. |
+| `studio-playtest_stop` | Stop any active playtest and return to edit mode. |
+| `studio-status` | Check connection status and whether a playtest is active. |
+
+### Log Streaming
+
+| Tool | Description |
+|---|---|
+| `studio-logs_subscribe` | Start capturing print(), errors, and warnings. Call before `logs_get`. |
+| `studio-logs_get` | Fetch buffered log entries. Requires active subscription. |
+| `studio-logs_unsubscribe` | Stop capturing and clear buffer. Always call when done. |
+
+### Player Control (Play mode only)
+
+These tools require an active Play mode playtest (`studio-playtest_play`).
+
+| Tool | Description |
+|---|---|
+| `studio-virtualuser_key` | Hold/release keys (W/A/S/D, Space, Shift) to move the player character. Keys stay held until released. |
+| `studio-virtualuser_mouse_button` | Raycast from character to detect/interact with world objects. Reports hit info. |
+| `studio-virtualuser_move_mouse` | Set player character facing direction (horizontal rotation). |
+
+### NPC Control (Play mode only)
+
+| Tool | Description |
+|---|---|
+| `studio-npc_driver_start` | Start controlling any Model with a Humanoid. Returns a `driverId`. |
+| `studio-npc_driver_command` | Send commands: `move_to`, `jump`, `wait`, `set_walkspeed`, `look_at`. Uses the `driverId`. |
+| `studio-npc_driver_stop` | Stop controlling an NPC and release the driver. |
+
+### Disabled Tools
+
+These are registered but **non-functional** due to Roblox API restrictions. Do not use them.
 
 | Tool | Reason |
 |---|---|
 | `studio-capture_screenshot` | CaptureService returns rbxtemp:// content IDs that cannot be extracted as files |
-| `studio-capture_video_start` | CaptureService does not expose video recording API |
-| `studio-capture_video_stop` | Same as above |
+| `studio-capture_video_start/stop` | CaptureService does not expose video recording API |
 
 ## Capture Folder
 
@@ -267,6 +299,7 @@ cargo run --bin mcpctl -- captures --dir .roblox-captures
 ```
 /CLAUDE.md                          Project instructions for AI agents
 /README.md                          This file
+/improve_tool_descriptions.md       Source of truth for MCP tool descriptions
 /server/
   Cargo.toml                        Rust dependencies
   src/
