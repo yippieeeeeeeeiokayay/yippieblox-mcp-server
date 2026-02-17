@@ -133,6 +133,26 @@ local function cleanupVirtualInput()
 	virtualKeys = {}
 end
 
+-- ─── NPC Driver State ─────────────────────────────────────────
+
+local npcDrivers = {}
+local nextDriverId = 1
+
+local function resolveInstancePath(path)
+	local parts = string.split(path, ".")
+	local current = game
+	for _, part in ipairs(parts) do
+		current = current:FindFirstChild(part)
+		if not current then return nil end
+	end
+	return current
+end
+
+local function cleanupNpcDrivers()
+	npcDrivers = {}
+	nextDriverId = 1
+end
+
 local function handleTool(toolName, args)
 	if toolName == "studio-run_script" then
 		return false, "studio-run_script is not available during playtest (loadstring is restricted). Use studio-test_script instead, which bakes code directly into a Script."
@@ -211,6 +231,7 @@ local function handleTool(toolName, args)
 
 	elseif toolName == "studio-playtest_stop" then
 		cleanupVirtualInput()
+		cleanupNpcDrivers()
 		local ok, err = pcall(function()
 			game:GetService("StudioTestService"):EndTest({})
 		end)
@@ -390,8 +411,157 @@ local function handleTool(toolName, args)
 			},
 		}
 
+	elseif toolName == "studio-npc_driver_start" then
+		local targetPath = args.target
+		if not targetPath then
+			return false, "Missing required argument: target (instance path like 'Workspace.NPCModel')"
+		end
+
+		local target = resolveInstancePath(targetPath)
+		if not target then
+			return false, "Instance not found at path: " .. targetPath
+		end
+
+		local humanoid = target:FindFirstChildOfClass("Humanoid")
+		if not humanoid then
+			return false, "No Humanoid found in: " .. targetPath
+		end
+
+		local driverId = "drv_" .. tostring(nextDriverId)
+		nextDriverId = nextDriverId + 1
+
+		npcDrivers[driverId] = {
+			target = target,
+			humanoid = humanoid,
+			targetPath = targetPath,
+		}
+
+		print("[MCP-Playtest] NPC driver started: " .. driverId .. " -> " .. target:GetFullName())
+		return true, {
+			driverId = driverId,
+			target = target:GetFullName(),
+			className = target.ClassName,
+			walkSpeed = humanoid.WalkSpeed,
+			health = humanoid.Health,
+			maxHealth = humanoid.MaxHealth,
+		}
+
+	elseif toolName == "studio-npc_driver_command" then
+		local driverId = args.driverId
+		if not driverId then
+			return false, "Missing required argument: driverId"
+		end
+
+		local driver = npcDrivers[driverId]
+		if not driver then
+			local ids = {}
+			for id in pairs(npcDrivers) do table.insert(ids, id) end
+			return false, "Unknown driverId: " .. tostring(driverId) .. ". Active: " .. (if #ids > 0 then table.concat(ids, ", ") else "none")
+		end
+
+		local humanoid = driver.humanoid
+		if not humanoid or not humanoid.Parent then
+			npcDrivers[driverId] = nil
+			return false, "Character no longer exists (destroyed or removed). Driver removed."
+		end
+
+		local cmd = args.command
+		if not cmd or not cmd.type then
+			return false, "Missing command or command.type. Supported: move_to, jump, wait, set_walkspeed, look_at"
+		end
+
+		local cmdType = cmd.type
+
+		if cmdType == "move_to" then
+			local pos = cmd.position
+			if not pos then
+				return false, "move_to requires 'position' ({x, y, z})"
+			end
+			local targetPos = Vector3.new(pos.x, pos.y, pos.z)
+			humanoid:MoveTo(targetPos)
+
+			local moveFinished = false
+			local reached = false
+			local conn = humanoid.MoveToFinished:Connect(function(r)
+				reached = r
+				moveFinished = true
+			end)
+			local timeout = cmd.timeout or 15
+			local elapsed = 0
+			while not moveFinished and elapsed < timeout do
+				task.wait(0.1)
+				elapsed = elapsed + 0.1
+			end
+			conn:Disconnect()
+
+			local rootPart = driver.target:FindFirstChild("HumanoidRootPart")
+			local finalPos = rootPart and rootPart.Position or Vector3.zero
+			return true, {
+				type = "move_to",
+				reached = reached,
+				timedOut = not moveFinished,
+				elapsed = math.floor(elapsed * 10) / 10,
+				position = { x = finalPos.X, y = finalPos.Y, z = finalPos.Z },
+			}
+
+		elseif cmdType == "jump" then
+			humanoid.Jump = true
+			return true, { type = "jump" }
+
+		elseif cmdType == "wait" then
+			local seconds = (cmd.ms or 1000) / 1000
+			task.wait(seconds)
+			return true, { type = "wait", waited = seconds }
+
+		elseif cmdType == "set_walkspeed" then
+			local value = cmd.value
+			if not value then
+				return false, "set_walkspeed requires 'value' (number)"
+			end
+			humanoid.WalkSpeed = value
+			return true, { type = "set_walkspeed", walkSpeed = humanoid.WalkSpeed }
+
+		elseif cmdType == "look_at" then
+			local pos = cmd.position
+			if not pos then
+				return false, "look_at requires 'position' ({x, y, z})"
+			end
+			local rootPart = driver.target:FindFirstChild("HumanoidRootPart")
+			if not rootPart then
+				return false, "Character has no HumanoidRootPart"
+			end
+			local targetPos = Vector3.new(pos.x, rootPart.Position.Y, pos.z)
+			rootPart.CFrame = CFrame.lookAt(rootPart.Position, targetPos)
+			return true, {
+				type = "look_at",
+				lookVector = {
+					x = rootPart.CFrame.LookVector.X,
+					y = rootPart.CFrame.LookVector.Y,
+					z = rootPart.CFrame.LookVector.Z,
+				},
+			}
+
+		else
+			return false, "Unknown command type: " .. tostring(cmdType) .. ". Supported: move_to, jump, wait, set_walkspeed, look_at"
+		end
+
+	elseif toolName == "studio-npc_driver_stop" then
+		local driverId = args.driverId
+		if not driverId then
+			return false, "Missing required argument: driverId"
+		end
+
+		local driver = npcDrivers[driverId]
+		if not driver then
+			return false, "Unknown driverId: " .. tostring(driverId)
+		end
+
+		npcDrivers[driverId] = nil
+		print("[MCP-Playtest] NPC driver stopped: " .. driverId)
+		return true, { driverId = driverId, stopped = true }
+
 	else
-		return false, "Tool '" .. tostring(toolName) .. "' is not available during playtest. Available: studio-status, studio-logs_*, studio-playtest_stop, studio-virtualuser_key, studio-virtualuser_mouse_button, studio-virtualuser_move_mouse"
+		return false, "Tool '" .. tostring(toolName) .. "' is not available during playtest. Available: studio-status, studio-logs_*, studio-playtest_stop, studio-virtualuser_*, studio-npc_driver_*"
 	end
 end
 
@@ -450,5 +620,6 @@ while RunService:IsRunning() do
 end
 
 cleanupVirtualInput()
+cleanupNpcDrivers()
 print("[MCP-Playtest] Playtest ended, bridge shutting down")
 ]==]

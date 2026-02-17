@@ -167,6 +167,9 @@ Restart Claude Desktop after saving. The `studio-*` tools will appear in the too
 | `studio-virtualuser_key` | Control player character movement during Play mode (WASD, Space, Shift) |
 | `studio-virtualuser_mouse_button` | Raycast from character to detect/interact with world objects during Play mode |
 | `studio-virtualuser_move_mouse` | Set player character facing direction during Play mode |
+| `studio-npc_driver_start` | Start controlling any NPC (character with Humanoid) during Play mode |
+| `studio-npc_driver_command` | Send commands to NPC: move_to, jump, wait, set_walkspeed, look_at |
+| `studio-npc_driver_stop` | Stop controlling an NPC |
 
 ### Disabled Tools (Roblox API restrictions)
 
@@ -174,9 +177,6 @@ These tools are registered but **will not work** due to Roblox security restrict
 
 | Tool | Reason |
 |---|---|
-| `studio-npc_driver_start` | Not yet implemented |
-| `studio-npc_driver_command` | Not yet implemented |
-| `studio-npc_driver_stop` | Not yet implemented |
 | `studio-capture_screenshot` | CaptureService returns rbxtemp:// content IDs that cannot be extracted as files |
 | `studio-capture_video_start` | CaptureService does not expose video recording API |
 | `studio-capture_video_stop` | Same as above |

@@ -105,6 +105,9 @@ All tools are namespaced under `studio-*`:
 | `studio-virtualuser_key` | Control player character (WASD, Space, Shift) during Play mode playtest |
 | `studio-virtualuser_mouse_button` | Raycast from character to detect/interact with world objects during Play mode |
 | `studio-virtualuser_move_mouse` | Set player character facing direction during Play mode |
+| `studio-npc_driver_start` | Start controlling any NPC (character with Humanoid) during Play mode |
+| `studio-npc_driver_command` | Send commands: move_to, jump, wait, set_walkspeed, look_at |
+| `studio-npc_driver_stop` | Stop controlling an NPC |
 
 ### Disabled Tools (Roblox API restrictions)
 
@@ -112,7 +115,6 @@ These tools are registered but **non-functional** due to Roblox engine security 
 
 | Tool | Reason |
 |------|--------|
-| `studio-npc_driver_*` (3 tools) | Not yet implemented. |
 | `studio-capture_screenshot` | CaptureService returns rbxtemp:// content IDs that cannot be extracted as files. |
 | `studio-capture_video_start/stop` | CaptureService does not expose a video recording API. |
 
@@ -146,6 +148,19 @@ These tools are registered but **non-functional** due to Roblox engine security 
 - **No unbounded buffers** — Log ring buffer and command trace are bounded (default 500 entries).
 - **No committing secrets** — If using a token, it's config/env only, never committed to repo.
 - **No skipping feature detection** — Every Roblox API call (StudioTestService, CaptureService, VirtualUser) must be feature-detected with a clear error if unavailable.
+
+## Roblox API Gotchas (Learned the Hard Way)
+
+These are recurring pitfalls discovered during development. **Read before modifying plugin code:**
+
+- **`StudioTestService:EndTest()` requires `{}` not `nil`** — Passing `nil` causes "Argument 1 missing or nil". Always pass an empty table `{}` or a result table. Same applies to `ExecutePlayModeAsync({})` and `ExecuteRunModeAsync({})`.
+- **`loadstring()` is NOT available in injected Scripts during playtest** — `ServerScriptService.LoadStringEnabled` is `NotScriptable` (can't be set from code). Workaround: bake user code directly into `Script.Source` instead of using loadstring. Plugin context CAN use loadstring, but injected server scripts cannot.
+- **HttpService is blocked in plugin context during playtest** — Error: "Http requests can only be executed by game server". The plugin must pause polling and let the injected server-side bridge Script handle HTTP. The bridge runs in ServerScriptService where HttpService works.
+- **Plugin scripts re-run in Play/Server DataModels during playtest** — Guard with `if RunService:IsRunning() then return end` at top of `init.server.lua` to prevent the plugin from re-initializing in playtest DataModels (causes duplicate HTTP errors).
+- **VirtualInputManager = RobloxScriptSecurity, VirtualUser = LocalUserSecurity** — Neither accessible from plugins. Character control must use direct Humanoid API instead (Move, Jump, WalkSpeed, CFrame).
+- **CaptureService returns `rbxtemp://` content IDs** — These are in-memory only and cannot be extracted as files from a plugin. Screenshot/video tools are disabled.
+- **Multi-client routing matters** — During playtest, both the plugin client and playtest bridge client are registered with the Rust server. `enqueue_tool_request` must prefer the most recently polled client (`max_by_key(last_poll)`), otherwise requests randomly go to the paused plugin. Tool handlers in the plugin for playtest-only features should be stubs that return clear errors as a safety net.
+- **`ClickDetector` cannot be triggered from server scripts** — The click flow is client→server. From server context, ClickDetectors are read-only. ProximityPrompts have the same limitation.
 
 ## Testing
 

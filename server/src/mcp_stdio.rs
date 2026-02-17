@@ -143,9 +143,6 @@ async fn handle_tools_call(state: &SharedState, id: Value, params: Value) -> Jso
 
     // Disabled tools — return unsupported immediately
     let disabled_reason = match tool_name.as_str() {
-        "studio-npc_driver_start" | "studio-npc_driver_command" | "studio-npc_driver_stop" => {
-            Some("Unsupported: NPC driver is not yet implemented.")
-        }
         "studio-capture_screenshot" => {
             Some("Unsupported: CaptureService returns rbxtemp:// content IDs that cannot be extracted as files from a plugin.")
         }
@@ -519,30 +516,21 @@ fn tool_definitions() -> Vec<McpToolDef> {
         },
         McpToolDef {
             name: "studio-npc_driver_start".into(),
-            description: Some("Start an NPC automation driver to control a character in a playtest".into()),
+            description: Some("Start controlling an NPC (any character model with a Humanoid) during a Play mode playtest (F5). Provide the instance path to the character model. Returns a driverId for subsequent commands. Multiple drivers can be active simultaneously.".into()),
             input_schema: json!({
                 "type": "object",
                 "properties": {
-                    "driverName": {
+                    "target": {
                         "type": "string",
-                        "description": "Name for this driver instance (default: MCPDriver)"
-                    },
-                    "mode": {
-                        "type": "string",
-                        "enum": ["playerInput", "scriptedNPC"],
-                        "description": "Driver mode"
-                    },
-                    "npcPath": {
-                        "type": "string",
-                        "description": "Path to NPC model in workspace (required if scriptedNPC mode)"
+                        "description": "Instance path to the character model (e.g. 'Workspace.NPCModel' or 'Workspace.Enemies.Zombie1')"
                     }
                 },
-                "required": ["mode"]
+                "required": ["target"]
             }),
         },
         McpToolDef {
             name: "studio-npc_driver_command".into(),
-            description: Some("Send a command to an active NPC driver".into()),
+            description: Some("Send a command to a controlled NPC during a Play mode playtest. Commands execute synchronously — move_to blocks until the NPC arrives or times out. Only works during Play mode with an active driver.".into()),
             input_schema: json!({
                 "type": "object",
                 "properties": {
@@ -552,11 +540,12 @@ fn tool_definitions() -> Vec<McpToolDef> {
                     },
                     "command": {
                         "type": "object",
-                        "description": "Command object with 'type' field: move_to, jump, interact, wait, set_walkspeed",
+                        "description": "Command to execute",
                         "properties": {
                             "type": {
                                 "type": "string",
-                                "enum": ["move_to", "jump", "interact", "wait", "set_walkspeed"]
+                                "enum": ["move_to", "jump", "wait", "set_walkspeed", "look_at"],
+                                "description": "Command type"
                             },
                             "position": {
                                 "type": "object",
@@ -564,11 +553,21 @@ fn tool_definitions() -> Vec<McpToolDef> {
                                     "x": { "type": "number" },
                                     "y": { "type": "number" },
                                     "z": { "type": "number" }
-                                }
+                                },
+                                "description": "Target position for move_to and look_at"
                             },
-                            "targetPath": { "type": "string" },
-                            "ms": { "type": "number" },
-                            "value": { "type": "number" }
+                            "ms": {
+                                "type": "number",
+                                "description": "Duration in milliseconds for wait command"
+                            },
+                            "value": {
+                                "type": "number",
+                                "description": "Value for set_walkspeed"
+                            },
+                            "timeout": {
+                                "type": "number",
+                                "description": "Max seconds to wait for move_to completion (default: 15)"
+                            }
                         },
                         "required": ["type"]
                     }
@@ -578,7 +577,7 @@ fn tool_definitions() -> Vec<McpToolDef> {
         },
         McpToolDef {
             name: "studio-npc_driver_stop".into(),
-            description: Some("Stop an active NPC driver".into()),
+            description: Some("Stop controlling an NPC and release the driver. Only works during Play mode.".into()),
             input_schema: json!({
                 "type": "object",
                 "properties": {
