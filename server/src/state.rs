@@ -84,11 +84,13 @@ impl SharedState {
 
     // ─── Tool Request Queuing ─────────────────────────────────
 
-    /// Enqueue a tool request for the first connected client.
+    /// Enqueue a tool request for the most recently active client (by last poll time).
+    /// This ensures requests go to the playtest bridge during playtest (it polls actively)
+    /// rather than the paused plugin client.
     /// Returns false if no client is connected.
     pub async fn enqueue_tool_request(&self, request: BridgeToolRequest) -> bool {
         let mut clients = self.0.clients.lock().await;
-        if let Some(client) = clients.values_mut().next() {
+        if let Some(client) = clients.values_mut().max_by_key(|c| c.last_poll) {
             client.outbound_queue.push_back(request);
             client.notify.notify_one();
             true

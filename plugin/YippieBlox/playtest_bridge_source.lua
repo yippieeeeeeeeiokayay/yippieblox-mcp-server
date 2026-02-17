@@ -212,7 +212,7 @@ local function handleTool(toolName, args)
 	elseif toolName == "studio-playtest_stop" then
 		cleanupVirtualInput()
 		local ok, err = pcall(function()
-			game:GetService("StudioTestService"):EndTest(nil)
+			game:GetService("StudioTestService"):EndTest({})
 		end)
 		if not ok then
 			return false, "EndTest() failed: " .. tostring(err)
