@@ -14,12 +14,11 @@ local ToolRouter = {}
 local handlers = {
 	-- status is handled inline (no module needed — just returns connection state)
 	["studio-status"] = function(_args, ctx)
-		local RunService = game:GetService("RunService")
 		return true, {
 			connected = true,
 			features = ctx.features,
 			playtest = {
-				active = RunService:IsRunning(),
+				active = Playtest.isActive(),
 			},
 		}
 	end,
